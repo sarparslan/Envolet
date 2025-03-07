@@ -1,4 +1,5 @@
 import 'package:envolet_frontend/Auth/login.dart';
+import 'package:envolet_frontend/Screens/HomePage.dart';
 import 'package:flutter/material.dart';
 
 void main() {
@@ -12,7 +13,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      home: LoginScreen(),
+      home: HomePage(),
     );
   }
 }
