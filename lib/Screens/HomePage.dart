@@ -2,7 +2,6 @@ import 'package:envolet_frontend/Widgets/bottomBarWidget.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:u_credit_card/u_credit_card.dart';
-import 'package:carousel_slider/carousel_slider.dart';
 import 'package:card_swiper/card_swiper.dart';
 
 class HomePage extends StatefulWidget {
@@ -55,6 +54,7 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       body: Column(
         children: [
           Padding(
@@ -219,7 +219,41 @@ class _HomePageState extends State<HomePage> {
       width: 350,
       color: Colors.grey[100],
       child: Column(
-        children: [],
+        children: [
+          paymentDetailRow('images/netflix_logo.jpg', 'Netflix',
+              '21 Sept - 13:01', '\$19.00'),
+          paymentDetailRow('images/macys_logo.jpg', 'Shopping',
+              '20 Sept - 18:43', '\$65.99'),
+        ],
+      ),
+    );
+  }
+
+  Widget paymentDetailRow(
+      String logoPath, String description, String date, String amount) {
+    return Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.start,
+        children: [
+          Image.asset(
+            logoPath,
+            width: 50,
+            height: 30,
+          ), // Logo
+          SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(description,
+                    style: TextStyle(fontWeight: FontWeight.bold)), // Açıklama
+                Text(date), // Tarih
+              ],
+            ),
+          ),
+          Text(amount, style: TextStyle(fontWeight: FontWeight.bold)), // Miktar
+        ],
       ),
     );
   }
