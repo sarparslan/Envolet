@@ -1,8 +1,9 @@
+import 'package:envolet_frontend/Util/Widgets/CreditCard.dart';
 import 'package:envolet_frontend/Widgets/bottomBarWidget.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:u_credit_card/u_credit_card.dart';
-import 'package:card_swiper/card_swiper.dart';
+import 'package:smooth_page_indicator/smooth_page_indicator.dart';
+import 'package:dotted_border/dotted_border.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -12,6 +13,41 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  late final PageController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = PageController(viewportFraction: 0.8);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  List<Map<String, String>> cards = [
+    /*
+    {
+      "cardNumber": "1234567890123854",
+      "bankName": "Sample Bank",
+      "balance": "5001.86",
+    },
+    {
+      "cardNumber": "2345678901234567",
+      "bankName": "Bank B",
+      "balance": "2,345.67"
+    },
+    {
+      "cardNumber": "3456789012345678",
+      "bankName": "Bank C",
+      "balance": "3,456.78"
+    },
+    {"cardNumber": "12345678912345678", "bankName": "Bank D", "balance": "500"},
+    */
+  ];
+
   void searchButtonPressed() {
     print("searchButtonPressed");
   }
@@ -36,62 +72,43 @@ class _HomePageState extends State<HomePage> {
     print("otherButtonPressed");
   }
 
-  List<Widget>? items = [1, 2, 3, 4, 5].map((i) {
-    return Builder(
-      builder: (BuildContext context) {
-        return Container(
-            width: MediaQuery.of(context).size.width,
-            margin: EdgeInsets.symmetric(horizontal: 5.0),
-            decoration: BoxDecoration(color: Colors.amber),
-            child: Text(
-              'text $i',
-              style: TextStyle(fontSize: 16.0),
-            ));
-      },
-    );
-  }).toList();
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      body: Column(
-        children: [
-          Padding(
-            padding: EdgeInsets.only(top: 60, left: 20),
-            child: title(),
-          ),
-          Padding(
-            padding: EdgeInsets.only(
-              top: 30,
-              left: 20,
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            Padding(
+              padding: EdgeInsets.only(top: 60, left: 20),
+              child: title(),
             ),
-            child: cardRow(),
-          ),
-          Padding(
-            padding: EdgeInsets.only(top: 30),
-            child: selectionRow(),
-          ),
-          Padding(
-            padding: EdgeInsets.only(top: 20, left: 20),
-            child: Row(
-              children: [
-                Text(
-                  'Latest Payments',
-                  style: TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black,
+            cardRow(),
+            Padding(
+              padding: EdgeInsets.only(top: 30),
+              child: selectionRow(),
+            ),
+            Padding(
+              padding: EdgeInsets.only(top: 20, left: 20),
+              child: Row(
+                children: [
+                  Text(
+                    'Latest Payments',
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          Padding(
-            padding: EdgeInsets.only(top: 20),
-            child: latestPaymentsRow(),
-          ),
-        ],
+            Padding(
+              padding: EdgeInsets.only(top: 20),
+              child: latestPaymentsRow(),
+            ),
+          ],
+        ),
       ),
       bottomNavigationBar: Padding(
         padding: EdgeInsets.only(
@@ -138,32 +155,82 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget cardRow() {
-    return Container(
-      height: 200,
-      child: Swiper(
-        itemBuilder: (BuildContext context, int index) {
-          return CreditCardUi(
-            scale: 0.9,
-            cardHolderFullName: 'John Doe',
-            cardNumber: '1234567812345678',
-            validThru: '10/24',
-          );
-        },
-        itemCount: 10,
-        viewportFraction: 0.8,
-        scale: 0.9,
-        /*
-                  pagination: SwiperPagination(
-                    alignment: ,
-                      builder: DotSwiperPaginationBuilder(
-                    activeColor: Colors.blue, // Aktif bullet rengi
-                    color: Colors.black54, // Pasif bullet rengi
-                    size: 12.0, // Pasif bullet boyutu
-                    activeSize: 12.0, // Aktif bullet boyutu
-                  )
-                  )*/
-      ),
-    );
+    if (cards.isEmpty) {
+      return Container(
+        height: 200,
+        width: 500,
+        margin: EdgeInsets.all(20),
+        child: InkWell(
+          onTap: () {
+            print("Add Card Tapped");
+          },
+          child: DottedBorder(
+            borderType: BorderType.RRect,
+            radius: Radius.circular(12),
+            padding: EdgeInsets.all(6),
+            color: Colors.grey,
+            dashPattern: [8, 4],
+            strokeWidth: 2,
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.add, size: 48, color: Colors.grey),
+                  SizedBox(height: 10),
+                  Text("Tap to add a card",
+                      style: TextStyle(fontSize: 18, color: Colors.grey))
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    } else {
+      return Column(
+        children: [
+          Container(
+            height: 240,
+            width: 600,
+            child: PageView.builder(
+              controller: _controller,
+              itemCount: cards.length,
+              itemBuilder: (context, index) {
+                var card = cards[index];
+                return Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                  child: CustomCreditCard(
+                    cardNumber: card['cardNumber']!,
+                    bankName: card['bankName']!,
+                    balance: card['balance']!,
+                    onEditPressed: () {
+                      print(
+                          'Edit button pressed for card ${card['cardNumber']}');
+                    },
+                  ),
+                );
+              },
+            ),
+          ),
+          SmoothPageIndicator(
+            controller: _controller,
+            count: cards.length,
+            effect: WormEffect(
+              dotHeight: 10,
+              dotWidth: 10,
+              activeDotColor: Colors.blue,
+              dotColor: Colors.grey,
+            ),
+            onDotClicked: (index) {
+              _controller.animateToPage(
+                index,
+                duration: Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+              );
+            },
+          ),
+        ],
+      );
+    }
   }
 
   Widget selectionRow() {
@@ -247,12 +314,12 @@ class _HomePageState extends State<HomePage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(description,
-                    style: TextStyle(fontWeight: FontWeight.bold)), // Açıklama
-                Text(date), // Tarih
+                    style: TextStyle(fontWeight: FontWeight.bold)),
+                Text(date),
               ],
             ),
           ),
-          Text(amount, style: TextStyle(fontWeight: FontWeight.bold)), // Miktar
+          Text(amount, style: TextStyle(fontWeight: FontWeight.bold)),
         ],
       ),
     );
