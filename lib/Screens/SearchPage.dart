@@ -1,4 +1,6 @@
 import 'package:envolet_frontend/Widgets/bottomBarWidget.dart';
+import 'package:envolet_frontend/Widgets/investAndGrow_popup.dart';
+import 'package:envolet_frontend/Widgets/transfer_popup.dart';
 import 'package:flutter/material.dart';
 
 class SearchPage extends StatefulWidget {
@@ -34,7 +36,37 @@ class _SearchPageState extends State<SearchPage> {
                   ),
                 ),
               ],
-            )
+            ),
+            ElevatedButton(
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  builder: (BuildContext context) {
+                    return TransferPopup(
+                      transferAmount: '\$25.00',
+                      transferTo: 'Sarp Arslan',
+                      status: 'Success',
+                      date: '20 May, 2024, 12:32 AM',
+                      category: 'Food',
+                      nominal: '\$25.00',
+                      fee: 'Free',
+                    );
+                  },
+                );
+              },
+              child: Text('Show Transfer Popup'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  builder: (BuildContext context) {
+                    return InvestAndGrowPopup();
+                  },
+                );
+              },
+              child: Text('Show Invest Popup'),
+            ),
           ],
         ),
       ),

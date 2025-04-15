@@ -1,4 +1,5 @@
 import 'package:envolet_frontend/Util/Widgets/CreditCard.dart';
+import 'package:envolet_frontend/Widgets/CardAdditionWidget.dart';
 import 'package:envolet_frontend/Widgets/bottomBarWidget.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -27,26 +28,7 @@ class _HomePageState extends State<HomePage> {
     super.dispose();
   }
 
-  List<Map<String, String>> cards = [
-    /*
-    {
-      "cardNumber": "1234567890123854",
-      "bankName": "Sample Bank",
-      "balance": "5001.86",
-    },
-    {
-      "cardNumber": "2345678901234567",
-      "bankName": "Bank B",
-      "balance": "2,345.67"
-    },
-    {
-      "cardNumber": "3456789012345678",
-      "bankName": "Bank C",
-      "balance": "3,456.78"
-    },
-    {"cardNumber": "12345678912345678", "bankName": "Bank D", "balance": "500"},
-    */
-  ];
+  List<Map<String, String>> cards = [];
 
   void searchButtonPressed() {
     print("searchButtonPressed");
@@ -154,85 +136,6 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget cardRow() {
-    if (cards.isEmpty) {
-      return Container(
-        height: 200,
-        width: 500,
-        margin: EdgeInsets.all(20),
-        child: InkWell(
-          onTap: () {
-            print("Add Card Tapped");
-          },
-          child: DottedBorder(
-            borderType: BorderType.RRect,
-            radius: Radius.circular(12),
-            padding: EdgeInsets.all(6),
-            color: Colors.grey,
-            dashPattern: [8, 4],
-            strokeWidth: 2,
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.add, size: 48, color: Colors.grey),
-                  SizedBox(height: 10),
-                  Text("Tap to add a card",
-                      style: TextStyle(fontSize: 18, color: Colors.grey))
-                ],
-              ),
-            ),
-          ),
-        ),
-      );
-    } else {
-      return Column(
-        children: [
-          Container(
-            height: 240,
-            width: 600,
-            child: PageView.builder(
-              controller: _controller,
-              itemCount: cards.length,
-              itemBuilder: (context, index) {
-                var card = cards[index];
-                return Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-                  child: CustomCreditCard(
-                    cardNumber: card['cardNumber']!,
-                    bankName: card['bankName']!,
-                    balance: card['balance']!,
-                    onEditPressed: () {
-                      print(
-                          'Edit button pressed for card ${card['cardNumber']}');
-                    },
-                  ),
-                );
-              },
-            ),
-          ),
-          SmoothPageIndicator(
-            controller: _controller,
-            count: cards.length,
-            effect: WormEffect(
-              dotHeight: 10,
-              dotWidth: 10,
-              activeDotColor: Colors.blue,
-              dotColor: Colors.grey,
-            ),
-            onDotClicked: (index) {
-              _controller.animateToPage(
-                index,
-                duration: Duration(milliseconds: 300),
-                curve: Curves.easeInOut,
-              );
-            },
-          ),
-        ],
-      );
-    }
-  }
-
   Widget selectionRow() {
     return Center(
       child: Row(
@@ -322,6 +225,123 @@ class _HomePageState extends State<HomePage> {
           Text(amount, style: TextStyle(fontWeight: FontWeight.bold)),
         ],
       ),
+    );
+  }
+
+  Widget cardRow() {
+    return Column(
+      children: [
+        Container(
+          height: 240,
+          width: 600,
+          child: PageView.builder(
+            controller: _controller,
+            itemCount: cards.length + 1,
+            itemBuilder: (context, index) {
+              if (index == cards.length) {
+                return Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                  child: InkWell(
+                    onTap: () async {
+                      final newCard = await showDialog<Map<String, String>>(
+                        context: context,
+                        builder: (context) => CardAdditionDialog(),
+                      );
+                      if (newCard != null) {
+                        setState(() {
+                          cards.add(newCard);
+                        });
+                      }
+                    },
+                    child: DottedBorder(
+                      borderType: BorderType.RRect,
+                      radius: Radius.circular(12),
+                      padding: EdgeInsets.all(6),
+                      color: Colors.grey,
+                      dashPattern: [8, 4],
+                      strokeWidth: 2,
+                      child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.add, size: 48, color: Colors.grey),
+                            SizedBox(height: 10),
+                            Text("Tap to add a new card",
+                                style:
+                                    TextStyle(fontSize: 18, color: Colors.grey))
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              } else {
+                var card = cards[index];
+                return Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                  child: CustomCreditCard(
+                    cardTail: card['cardTail']!,
+                    bankName: card['bankName']!,
+                    balance: card['balance']!,
+                    colorHex: card['color'],
+                    cardBrand: card['cardBrand'],
+                    currency: card['currency'],
+                    onEditPressed: () async {
+                      final result = await showDialog<Map<String, String>>(
+                        context: context,
+                        builder: (context) =>
+                            CardAdditionDialog(initialData: card),
+                      );
+
+                      if (result != null) {
+                        // 1) Silme işlemi mi döndü?
+                        if (result['delete'] == 'true') {
+                          // Geri dönen 'cardNumber' ile eşleşen kartı listeden çıkar.
+                          setState(() {
+                            cards.removeWhere(
+                                (c) => c['cardNumber'] == result['cardNumber']);
+                          });
+                        } else {
+                          final existingIndex = cards.indexWhere(
+                            (c) => c['cardNumber'] == result['cardNumber'],
+                          );
+
+                          setState(() {
+                            if (existingIndex != -1) {
+                              // Mevcut kartı güncelle
+                              cards[existingIndex] = result;
+                            } else {
+                              // Yeni kart ekle
+                              cards.add(result);
+                            }
+                          });
+                        }
+                      }
+                    },
+                  ),
+                );
+              }
+            },
+          ),
+        ),
+        SmoothPageIndicator(
+          controller: _controller,
+          count: cards.length + 1,
+          effect: WormEffect(
+            dotHeight: 10,
+            dotWidth: 10,
+            activeDotColor: Colors.blue,
+            dotColor: Colors.grey,
+          ),
+          onDotClicked: (index) {
+            _controller.animateToPage(
+              index,
+              duration: Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+            );
+          },
+        ),
+      ],
     );
   }
 }
