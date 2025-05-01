@@ -3,15 +3,14 @@ import 'package:envolet_frontend/Widgets/investAndGrow_popup.dart';
 import 'package:envolet_frontend/Widgets/transfer_popup.dart';
 import 'package:flutter/material.dart';
 
-class SearchPage extends StatefulWidget {
-  const SearchPage({super.key});
+class TransactionPage extends StatefulWidget {
+  const TransactionPage({super.key});
 
   @override
-  State<SearchPage> createState() => _SearchPageState();
+  State<TransactionPage> createState() => _TransactionPageState();
 }
 
-class _SearchPageState extends State<SearchPage> {
-  @override
+class _TransactionPageState extends State<TransactionPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
@@ -28,7 +27,7 @@ class _SearchPageState extends State<SearchPage> {
             Row(
               children: [
                 Text(
-                  "Search Page", ////TODO : Get Username from API or SharedPreferences
+                  "Transactions",
                   style: TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.bold,
@@ -74,7 +73,7 @@ class _SearchPageState extends State<SearchPage> {
         padding: EdgeInsets.only(
           bottom: MediaQuery.of(context).size.height * 0.03,
         ),
-        child: BottomNavBarWidget(currentPage: Pages.SearchPage),
+        child: BottomNavBarWidget(currentPage: Pages.TransactionPage),
       ),
     );
   }

@@ -34,10 +34,6 @@ class _HomePageState extends State<HomePage> {
     print("searchButtonPressed");
   }
 
-  void notificationbuttonPressed() {
-    print("onBellPressed");
-  }
-
   void revenueButtonPressed() {
     print("revenueButtonPressed");
   }
@@ -62,7 +58,7 @@ class _HomePageState extends State<HomePage> {
         child: Column(
           children: [
             Padding(
-              padding: EdgeInsets.only(top: 60, left: 20),
+              padding: EdgeInsets.only(top: 60, left: 20, bottom: 15),
               child: title(),
             ),
             cardRow(),
@@ -111,26 +107,6 @@ class _HomePageState extends State<HomePage> {
             fontWeight: FontWeight.bold,
             color: Colors.black,
           ),
-        ),
-        SizedBox(
-          width: 100,
-        ),
-        IconButton(
-          onPressed: searchButtonPressed,
-          icon: Icon(
-            FontAwesomeIcons.search,
-            color: Colors.black,
-          ),
-          iconSize: 20,
-        ),
-        SizedBox(
-          width: 30,
-        ),
-        IconButton(
-          onPressed: notificationbuttonPressed,
-          icon: Icon(FontAwesomeIcons.bell),
-          color: Colors.black,
-          iconSize: 20,
         ),
       ],
     );

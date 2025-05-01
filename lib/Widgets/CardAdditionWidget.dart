@@ -21,7 +21,6 @@ class _CardAdditionDialogState extends State<CardAdditionDialog> {
   late Color _cardColor;
   late String _selectedCurrency;
 
-  // 10 popular currencies (including TL)
   final List<String> _currencyOptions = [
     "USD",
     "EUR",

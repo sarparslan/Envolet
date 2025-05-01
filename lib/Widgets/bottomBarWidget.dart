@@ -3,15 +3,17 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:envolet_frontend/Screens/HomePage.dart';
-import 'package:envolet_frontend/Screens/ProfilePage.dart';
-import 'package:envolet_frontend/Screens/SearchPage.dart';
-import 'package:envolet_frontend/Screens/WalletPage.dart';
+import 'package:envolet_frontend/Screens/SettingsPage.dart';
+import 'package:envolet_frontend/Screens/TransactionPage.dart';
+import 'package:envolet_frontend/Screens/AssetsPage.dart';
+import 'package:envolet_frontend/Screens/InsightsPage.dart'; // InsightsPage import edildi
 
 enum Pages {
   HomePage,
-  ProfilePage,
-  SearchPage,
-  WalletPage,
+  SettingsPage,
+  TransactionPage,
+  InsightsPage, // Enum'a eklendi
+  AssetsPage,
 }
 
 class BottomNavBarWidget extends StatelessWidget {
@@ -44,12 +46,14 @@ class BottomNavBarWidget extends StatelessWidget {
             children: [
               _buildNavItem(
                   Icons.home, "Home", Pages.HomePage, iconSize, context),
+              _buildNavItem(FontAwesomeIcons.moneyBillTransfer, "Transaction",
+                  Pages.TransactionPage, iconSize, context),
+              _buildNavItem(Icons.bar_chart, "Insights", Pages.InsightsPage,
+                  iconSize, context), // Yeni öğe
               _buildNavItem(
-                  Icons.search, "Search", Pages.SearchPage, iconSize, context),
-              _buildNavItem(
-                  Icons.wallet, "Wallet", Pages.WalletPage, iconSize, context),
-              _buildNavItem(FontAwesomeIcons.user, "Profile", Pages.ProfilePage,
-                  iconSize, context),
+                  Icons.wallet, "Assets", Pages.AssetsPage, iconSize, context),
+              _buildNavItem(FontAwesomeIcons.gear, "Settings",
+                  Pages.SettingsPage, iconSize, context),
             ],
           ),
         ),
@@ -68,12 +72,14 @@ class BottomNavBarWidget extends StatelessWidget {
               switch (page) {
                 case Pages.HomePage:
                   return HomePage();
-                case Pages.SearchPage:
-                  return SearchPage();
-                case Pages.WalletPage:
-                  return WalletPage();
-                case Pages.ProfilePage:
-                  return ProfilePage();
+                case Pages.TransactionPage:
+                  return TransactionPage();
+                case Pages.InsightsPage:
+                  return InsightsPage(); // Yeni case
+                case Pages.AssetsPage:
+                  return AssetsPage();
+                case Pages.SettingsPage:
+                  return SettingsPage();
               }
             },
             transitionsBuilder: (_, animation, __, child) {
