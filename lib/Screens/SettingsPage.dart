@@ -1,6 +1,6 @@
-import 'package:envolet_frontend/Util/globals.dart';
-import 'package:envolet_frontend/Widgets/bottomBarWidget.dart';
 import 'package:flutter/material.dart';
+import 'package:envolet_frontend/Widgets/bottomBarWidget.dart';
+import 'package:envolet_frontend/Util/globals.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -11,8 +11,6 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
-  String selectedCurrency = 'EUR';
-  String selectedLanguage = 'EN';
   final List<String> currencies = [
     "USD",
     "EUR",
@@ -25,60 +23,37 @@ class _SettingsPageState extends State<SettingsPage> {
     "SEK",
     "TL"
   ];
-  final List<String> languages = ['EN', 'TR'];
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
       body: Padding(
-        padding: const EdgeInsets.only(top: 20, left: 20, right: 30),
+        padding: const EdgeInsets.only(top: 30),
         child: ListView(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
           children: [
             const Text(
               "Settings",
-              style: TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.bold,
-                color: Colors.black,
-              ),
-            ),
-            const SizedBox(height: 20),
-            const Divider(),
-            const Text("Account Info",
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: const [
-                Text("Name Surname",
-                    style:
-                        TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
-                Text("example@mail.com",
-                    style:
-                        TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
-              ],
+              style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 30),
-            const Divider(),
-            const Text("App Preferences",
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 10),
-            ListTile(
-              title: const Text("Currency"),
-              trailing: DropdownButton<String>(
-                value: selectedCurrency,
-                items: currencies
-                    .map((value) =>
-                        DropdownMenuItem(value: value, child: Text(value)))
-                    .toList(),
-                onChanged: (value) {
-                  setState(() {
-                    selectedCurrency = value!;
-                  });
-                },
-              ),
-            ),
+
+            /// PERSONAL SECTION
+            const _SectionHeader("Personal"),
+            _SettingsTile(title: "Profile", onTap: () {}),
+            _SettingsTile(title: "Lorem Ipsum dolor sit Amet", onTap: () {}),
+
+            /// SHOP SECTION
+            const SizedBox(height: 25),
+            const _SectionHeader("Shop"),
+            _SettingsTile(title: "Country", value: "Turkey", onTap: () {}),
+            _SettingsTile(title: "Currency", value: "\$ USD", onTap: () {}),
+            _SettingsTile(title: "Terms and Conditions", onTap: () {}),
+
+            /// ACCOUNT SECTION
+            const SizedBox(height: 25),
+            const _SectionHeader("Account"),
+            _SettingsTile(title: "Language", value: "English", onTap: () {}),
             ListTile(
               title: const Text("Dark Mode"),
               trailing: Switch(
@@ -94,22 +69,8 @@ class _SettingsPageState extends State<SettingsPage> {
                 },
               ),
             ),
-            const Divider(height: 40),
-            const Text("About App",
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 10),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.start,
-              children: const [
-                Text("Version Information",
-                    style:
-                        TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
-                SizedBox(width: 120),
-                Text("1.0",
-                    style:
-                        TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
-              ],
-            ),
+
+            _SettingsTile(title: "About Envolet", onTap: () {}),
             SizedBox(height: 10),
             Row(
               mainAxisAlignment: MainAxisAlignment.start,
@@ -148,11 +109,9 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
               ],
             ),
-            const SizedBox(height: 10),
-            const Divider(height: 40),
-            const Text("Account Actions",
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 10),
+
+            /// DELETE ACCOUNT
+            const SizedBox(height: 25),
             ListTile(
               leading: const Icon(Icons.logout),
               title: const Text("Log Out"),
@@ -180,6 +139,66 @@ class _SettingsPageState extends State<SettingsPage> {
         ),
         child: BottomNavBarWidget(currentPage: Pages.SettingsPage),
       ),
+    );
+  }
+}
+
+/// Section Title
+class _SectionHeader extends StatelessWidget {
+  final String title;
+  const _SectionHeader(this.title);
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Text(
+        title,
+        style: const TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+}
+
+/// Single Row Item
+class _SettingsTile extends StatelessWidget {
+  final String title;
+  final String? value;
+  final VoidCallback onTap;
+
+  const _SettingsTile({
+    required this.title,
+    this.value,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      title: Text(
+        title,
+        style: const TextStyle(fontSize: 16),
+      ),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (value != null)
+            Padding(
+              padding: const EdgeInsets.only(right: 8.0),
+              child: Text(
+                value!,
+                style:
+                    const TextStyle(fontSize: 16, fontWeight: FontWeight.w400),
+              ),
+            ),
+          const Icon(Icons.arrow_forward_ios, size: 16),
+        ],
+      ),
+      onTap: onTap,
     );
   }
 }

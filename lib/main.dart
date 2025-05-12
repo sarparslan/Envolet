@@ -1,9 +1,12 @@
 import 'dart:math';
 
 import 'package:envolet_frontend/Auth/login.dart';
+import 'package:envolet_frontend/Auth/register.dart';
 import 'package:envolet_frontend/Screens/AssetsPage.dart';
 import 'package:envolet_frontend/Screens/HomePage.dart';
+import 'package:envolet_frontend/Screens/TrackerPage.dart';
 import 'package:envolet_frontend/Screens/SettingsPage.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 void main() {
@@ -17,7 +20,15 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      home: AssetsPage(),
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+        textSelectionTheme: TextSelectionThemeData(
+          cursorColor: Colors.blue,
+          selectionColor: Colors.blue.shade200,
+          selectionHandleColor: Colors.blue,
+        ),
+      ),
+      home: LoginPage(),
     );
   }
 }

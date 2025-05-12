@@ -1,4 +1,6 @@
 import 'package:envolet_frontend/Auth/login.dart';
+import 'package:envolet_frontend/Screens/HomePage.dart';
+import 'package:envolet_frontend/Services/api.dart';
 import 'package:envolet_frontend/Util/alart.dart';
 import 'package:flutter/material.dart';
 
@@ -233,17 +235,33 @@ class _RegisterPageState extends State<RegisterPage> {
         onPressed: _passwordsMatch &&
                 _verifyFieldTouched &&
                 _isEmailValid(_emailController.text)
-            ? () {
-                if (!_isEmailValid(_emailController.text)) {
-                  Util.errorAlertAndNavigate(
-                      context,
-                      "Please enter a valid email address.",
-                      "Failed to Register");
-                  return; // Don't proceed if email is invalid.
+            ? () async {
+                final email = _emailController.text.trim();
+                final password = _passwordController.text.trim();
+
+                print("📨 Register pressed with email: $email");
+
+                final result = await Api.registerCall(
+                  email: email,
+                  password: password,
+                );
+
+                if (result != null) {
+                  print("✅ Register successful. Token: ${result.token}");
+
+                  Util.successAlertAndGoToPage(
+                    context,
+                    "Your account has been created successfully!",
+                    HomePage(),
+                  );
                 } else {
-                  // createUserWithEmailAndPassword();
-                  // Navigator.of(context).push(
-                  //     MaterialPageRoute(builder: (context) => FirstPage()));
+                  print("❌ Register failed for email: $email");
+
+                  Util.errorAlertAndNavigate(
+                    context,
+                    "Registration failed. Please try again with a valid email and password.",
+                    "Register Error",
+                  );
                 }
               }
             : null,
@@ -266,19 +284,19 @@ class _RegisterPageState extends State<RegisterPage> {
       ),
     );
   }
+}
 
-  Widget _buildLoginText(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        Navigator.of(context)
-            .push(MaterialPageRoute(builder: (context) => LoginPage()));
-      },
-      child: Text(
-        'Already have an account? Login',
-        style: TextStyle(
-          color: Colors.blue,
-        ),
+Widget _buildLoginText(BuildContext context) {
+  return GestureDetector(
+    onTap: () {
+      Navigator.of(context)
+          .push(MaterialPageRoute(builder: (context) => LoginPage()));
+    },
+    child: Text(
+      'Already have an account? Login',
+      style: TextStyle(
+        color: Colors.blue,
       ),
-    );
-  }
+    ),
+  );
 }

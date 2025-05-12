@@ -1,5 +1,8 @@
 import 'package:envolet_frontend/Auth/register.dart';
+import 'package:envolet_frontend/Screens/HomePage.dart';
+import 'package:envolet_frontend/Services/api.dart';
 import 'package:envolet_frontend/Util/Helper/helper.dart';
+import 'package:envolet_frontend/Util/alart.dart';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -14,27 +17,18 @@ class LoginPage extends StatefulWidget {
 final TextEditingController _emailController = TextEditingController();
 final TextEditingController _passwordController = TextEditingController();
 
-/*
-Future<void> signInWithEmailAndPassword() async {
-  print("pressed in login page");
-  try {
-    await Auth().signInWithEmailAndPassword(
-        email: _emailController.text.trim(),
-        password: _passwordController.text.trim());
-  } on FirebaseAuthException catch (e) {
-    print("Firebase Auth Error");
-    print(e);
-  }
-}
-*/
-
 class _LoginPageState extends State<LoginPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: EdgeInsets.only(
+            top: MediaQuery.of(context).size.height * 0.03,
+            bottom: MediaQuery.of(context).size.height * 0.03,
+            left: MediaQuery.of(context).size.width * 0.04,
+            right: MediaQuery.of(context).size.width * 0.04,
+          ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
@@ -126,14 +120,33 @@ class _LoginPageState extends State<LoginPage> {
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
-        onPressed: () {
-          // signInWithEmailAndPassword();
-          // Navigator.of(context)
-          //     .push(MaterialPageRoute(builder: (context) => HomePage()));
-          // Login butonuna basıldığında yapılacaklar
+        onPressed: () async {
+          final email = _emailController.text.trim();
+          final password = _passwordController.text.trim();
+
+          if (email.isEmpty || password.isEmpty) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text("Please enter both email and password")),
+            );
+            return;
+          }
+
+          final result = await Api.loginCall(email: email, password: password);
+          if (result != null) {
+            print("✅ Login successful. Token: ${result.token}");
+
+            Util.navigateWithFade(context, HomePage());
+          } else {
+            print("❌ Login failed for email: $email");
+            Util.errorAlertAndNavigate(
+              context,
+              "Login failed. Please check your credentials and try again.",
+              "Login Error",
+            );
+          }
         },
         style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.blue, // Buton rengi
+          backgroundColor: Colors.blue,
           padding: EdgeInsets.symmetric(vertical: 16),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8),

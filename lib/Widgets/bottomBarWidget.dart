@@ -6,13 +6,13 @@ import 'package:envolet_frontend/Screens/HomePage.dart';
 import 'package:envolet_frontend/Screens/SettingsPage.dart';
 import 'package:envolet_frontend/Screens/TransactionPage.dart';
 import 'package:envolet_frontend/Screens/AssetsPage.dart';
-import 'package:envolet_frontend/Screens/InsightsPage.dart'; // InsightsPage import edildi
+import 'package:envolet_frontend/Screens/TrackerPage.dart'; // InsightsPage import edildi
 
 enum Pages {
   HomePage,
   SettingsPage,
   TransactionPage,
-  InsightsPage, // Enum'a eklendi
+  TrackerPage,
   AssetsPage,
 }
 
@@ -48,7 +48,7 @@ class BottomNavBarWidget extends StatelessWidget {
                   Icons.home, "Home", Pages.HomePage, iconSize, context),
               _buildNavItem(FontAwesomeIcons.moneyBillTransfer, "Transaction",
                   Pages.TransactionPage, iconSize, context),
-              _buildNavItem(Icons.bar_chart, "Insights", Pages.InsightsPage,
+              _buildNavItem(Icons.bar_chart, "Insights", Pages.TrackerPage,
                   iconSize, context), // Yeni öğe
               _buildNavItem(
                   Icons.wallet, "Assets", Pages.AssetsPage, iconSize, context),
@@ -74,8 +74,8 @@ class BottomNavBarWidget extends StatelessWidget {
                   return HomePage();
                 case Pages.TransactionPage:
                   return TransactionPage();
-                case Pages.InsightsPage:
-                  return InsightsPage(); // Yeni case
+                case Pages.TrackerPage:
+                  return TrackerPage(); // Yeni case
                 case Pages.AssetsPage:
                   return AssetsPage();
                 case Pages.SettingsPage:

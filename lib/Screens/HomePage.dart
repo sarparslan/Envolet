@@ -1,6 +1,8 @@
 import 'package:envolet_frontend/Util/Widgets/CreditCard.dart';
 import 'package:envolet_frontend/Widgets/CardAdditionWidget.dart';
 import 'package:envolet_frontend/Widgets/bottomBarWidget.dart';
+import 'package:envolet_frontend/Widgets/investAndGrow_popup.dart';
+import 'package:envolet_frontend/Widgets/transfer_popup.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
@@ -299,6 +301,36 @@ class _HomePageState extends State<HomePage> {
               }
             },
           ),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            showDialog(
+              context: context,
+              builder: (BuildContext context) {
+                return TransferPopup(
+                  transferAmount: '\$25.00',
+                  transferTo: 'Sarp Arslan',
+                  status: 'Success',
+                  date: '20 May, 2024, 12:32 AM',
+                  category: 'Food',
+                  nominal: '\$25.00',
+                  fee: 'Free',
+                );
+              },
+            );
+          },
+          child: Text('Show Transfer Popup'),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            showDialog(
+              context: context,
+              builder: (BuildContext context) {
+                return InvestAndGrowPopup();
+              },
+            );
+          },
+          child: Text('Show Invest Popup'),
         ),
         SmoothPageIndicator(
           controller: _controller,

@@ -46,6 +46,7 @@ dependencies:
   fl_chart: ^0.71.0
   shared_preferences: ^2.5.3
   connectivity_plus: ^5.0.1
+  flutter_secure_storage: ^9.0.0
   
 dev_dependencies:
   flutter_test:
@@ -74,8 +75,12 @@ flutter:
     - images/netflix_logo.jpg
     - images/macys_logo.jpg
     - images/openingOnboarding.png
+    - images/apple_logo.png
+    - images/google_logo.png
     - images/loginOnboarding.png
     - images/registerOnboarding.png
+
+
 
 
   # An image asset can refer to one or more resolution-specific "variants", see

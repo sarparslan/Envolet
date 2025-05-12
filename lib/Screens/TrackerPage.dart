@@ -1,16 +1,18 @@
-import 'package:envolet_frontend/Widgets/bottomBarWidget.dart';
-import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
-class InsightsPage extends StatefulWidget {
-  const InsightsPage({super.key});
+import 'package:envolet_frontend/Widgets/bottomBarWidget.dart';
+import 'package:fl_chart/fl_chart.dart';
+
+class TrackerPage extends StatefulWidget {
+  const TrackerPage({super.key});
 
   @override
-  State<InsightsPage> createState() => _InsightsPageState();
+  State<TrackerPage> createState() => _TrackerPageState();
 }
 
-class _InsightsPageState extends State<InsightsPage>
+class _TrackerPageState extends State<TrackerPage>
     with SingleTickerProviderStateMixin {
+  @override
   late TabController _tabController;
   String _selectedDate = 'This week';
 
@@ -51,8 +53,6 @@ class _InsightsPageState extends State<InsightsPage>
         child: Column(
           children: [
             const SizedBox(height: 50),
-            _insightsHeader(),
-            const SizedBox(height: 16),
             _trackerHeader(),
             const SizedBox(height: 10),
             _tabBar(),
@@ -72,23 +72,8 @@ class _InsightsPageState extends State<InsightsPage>
         padding: EdgeInsets.only(
           bottom: MediaQuery.of(context).size.height * 0.03,
         ),
-        child: BottomNavBarWidget(currentPage: Pages.InsightsPage),
+        child: BottomNavBarWidget(currentPage: Pages.TrackerPage),
       ),
-    );
-  }
-
-  Widget _insightsHeader() {
-    return const Row(
-      children: [
-        Text(
-          "Insights",
-          style: TextStyle(
-            fontSize: 17,
-            fontWeight: FontWeight.bold,
-            color: Colors.black,
-          ),
-        ),
-      ],
     );
   }
 
@@ -228,22 +213,54 @@ class _InsightsPageState extends State<InsightsPage>
   }
 
   Widget _lineChartCard() {
-    return SizedBox(
-      height: 250,
+    return AspectRatio(
+      aspectRatio: 1.2,
       child: Card(
         color: Colors.white,
         elevation: 3,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(16),
           child: LineChart(
             LineChartData(
+              backgroundColor: Colors.white,
+              lineTouchData: LineTouchData(
+                handleBuiltInTouches: true,
+                touchTooltipData: LineTouchTooltipData(
+                    tooltipBorderRadius: BorderRadius.circular(8),
+                    tooltipPadding: const EdgeInsets.all(8),
+                    tooltipMargin: 10,
+                    getTooltipColor: (spot) => Colors.white,
+                    getTooltipItems: (touchedSpots) {
+                      return touchedSpots.map((spot) {
+                        final touchedX = spot.x;
+                        final matchingSpot = spot.bar.spots.firstWhere(
+                          (s) => s.x == touchedX,
+                          orElse: () => FlSpot.nullSpot,
+                        );
+
+                        // Spot yoksa gösterme
+                        if (matchingSpot == FlSpot.nullSpot) return null;
+
+                        final isIncome = spot.barIndex == 0;
+                        final label = isIncome ? 'Income' : 'Spending';
+                        final color =
+                            isIncome ? Colors.blue.shade900 : Colors.cyan;
+
+                        return LineTooltipItem(
+                          '$label: \$${spot.y.toInt()}',
+                          TextStyle(
+                            color: color,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        );
+                      }).toList();
+                    }),
+              ),
               gridData: FlGridData(
                 show: true,
-                drawVerticalLine: false,
-                horizontalInterval: 50,
+                drawVerticalLine: true,
                 getDrawingHorizontalLine: (value) => FlLine(
                   color: Colors.grey.withOpacity(0.2),
                   strokeWidth: 1,
@@ -253,8 +270,14 @@ class _InsightsPageState extends State<InsightsPage>
                 leftTitles: AxisTitles(
                   sideTitles: SideTitles(
                     showTitles: true,
-                    reservedSize: 40,
-                    interval: 50,
+                    reservedSize: 42,
+                    interval: 100,
+                    getTitlesWidget: (value, meta) {
+                      return Text(
+                        '\$${value.toInt()}',
+                        style: const TextStyle(fontSize: 10),
+                      );
+                    },
                   ),
                 ),
                 bottomTitles: AxisTitles(
@@ -262,33 +285,33 @@ class _InsightsPageState extends State<InsightsPage>
                     showTitles: true,
                     interval: 1,
                     getTitlesWidget: (value, meta) {
-                      switch (value.toInt()) {
-                        case 15:
-                          return const Text('15');
-                        case 16:
-                          return const Text('16');
-                        case 17:
-                          return const Text('17');
-                        case 18:
-                          return const Text('18');
-                        case 19:
-                          return const Text('19');
-                        case 20:
-                          return const Text('20');
-                        default:
-                          return const SizedBox();
-                      }
+                      return Text(
+                        value.toInt().toString(),
+                        style: const TextStyle(fontSize: 10),
+                      );
                     },
                   ),
                 ),
+                rightTitles:
+                    AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                topTitles:
+                    AxisTitles(sideTitles: SideTitles(showTitles: false)),
               ),
-              borderData: FlBorderData(show: false),
+              borderData: FlBorderData(
+                show: true,
+                border: Border.all(color: Colors.grey.withOpacity(0.3)),
+              ),
               minX: 15,
               maxX: 20,
               minY: 0,
               maxY: 400,
               lineBarsData: [
                 LineChartBarData(
+                  isCurved: true,
+                  barWidth: 3,
+                  color: Colors.blue.shade900,
+                  belowBarData: BarAreaData(show: false),
+                  dotData: FlDotData(show: true),
                   spots: const [
                     FlSpot(15, 200),
                     FlSpot(16, 250),
@@ -297,12 +320,13 @@ class _InsightsPageState extends State<InsightsPage>
                     FlSpot(19, 180),
                     FlSpot(20, 360),
                   ],
-                  isCurved: true,
-                  color: Colors.blue,
-                  barWidth: 3,
-                  dotData: FlDotData(show: false),
                 ),
                 LineChartBarData(
+                  isCurved: true,
+                  barWidth: 3,
+                  color: Colors.cyan,
+                  belowBarData: BarAreaData(show: false),
+                  dotData: FlDotData(show: true),
                   spots: const [
                     FlSpot(15, 160),
                     FlSpot(16, 280),
@@ -311,10 +335,6 @@ class _InsightsPageState extends State<InsightsPage>
                     FlSpot(19, 150),
                     FlSpot(20, 340),
                   ],
-                  isCurved: true,
-                  color: Colors.lightBlueAccent,
-                  barWidth: 3,
-                  dotData: FlDotData(show: false),
                 ),
               ],
             ),
@@ -399,37 +419,36 @@ class _InsightsPageState extends State<InsightsPage>
   }
 
   Widget _analyticTab() {
-    final List<PieChartSectionData> sections = [
-      PieChartSectionData(value: 25, title: 'Food', color: Colors.blue),
-      PieChartSectionData(value: 15, title: 'Transport', color: Colors.green),
-      PieChartSectionData(value: 20, title: 'Lifestyle', color: Colors.purple),
-      PieChartSectionData(value: 10, title: 'Health', color: Colors.orange),
-      PieChartSectionData(value: 5, title: 'Utilities', color: Colors.teal),
-      PieChartSectionData(value: 10, title: 'Shopping', color: Colors.cyan),
-      PieChartSectionData(value: 5, title: 'Education', color: Colors.amber),
-      PieChartSectionData(
-          value: 5, title: 'Entertainment', color: Colors.indigo),
-      PieChartSectionData(value: 3, title: 'Travel', color: Colors.redAccent),
-      PieChartSectionData(value: 2, title: 'Others', color: Colors.grey),
-      PieChartSectionData(value: 2, title: 'Custom', color: Colors.pinkAccent),
-      PieChartSectionData(value: 1, title: 'Custom', color: Colors.pink),
-      PieChartSectionData(value: 1, title: 'Custom', color: Colors.deepOrange),
-      PieChartSectionData(value: 0.5, title: 'Custom', color: Colors.lime),
-      PieChartSectionData(value: 0.5, title: 'Custom', color: Colors.brown),
+    final List<Map<String, dynamic>> categories = [
+      {'label': 'Food', 'value': 25.0, 'color': Colors.blue},
+      {'label': 'Transport', 'value': 15.0, 'color': Colors.green},
+      {'label': 'Lifestyle', 'value': 20.0, 'color': Colors.purple},
+      {'label': 'Health', 'value': 10.0, 'color': Colors.orange},
+      {'label': 'Utilities', 'value': 5.0, 'color': Colors.teal},
+      {'label': 'Shopping', 'value': 10.0, 'color': Colors.cyan},
+      {'label': 'Education', 'value': 5.0, 'color': Colors.amber},
+      {'label': 'Entertainment', 'value': 5.0, 'color': Colors.indigo},
+      {'label': 'Travel', 'value': 3.0, 'color': Colors.redAccent},
     ];
+
+    final List<PieChartSectionData> sections = categories.map((data) {
+      return PieChartSectionData(
+        value: data['value'],
+        title: '${data['value']}%',
+        color: data['color'],
+        radius: 60,
+        titleStyle: const TextStyle(color: Colors.white, fontSize: 12),
+      );
+    }).toList();
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          const Text(
-            'Spending Breakdown',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
           const SizedBox(height: 20),
           AspectRatio(
-            aspectRatio: 1.2,
+            aspectRatio: 1.3,
             child: PieChart(
               PieChartData(
                 sections: sections,
@@ -438,6 +457,30 @@ class _InsightsPageState extends State<InsightsPage>
                 borderData: FlBorderData(show: false),
               ),
             ),
+          ),
+          const SizedBox(height: 20),
+          Wrap(
+            spacing: 16,
+            runSpacing: 12,
+            children: categories.map((item) {
+              return Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 12,
+                    height: 12,
+                    decoration: BoxDecoration(
+                      color: item['color'],
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(item['label'],
+                      style:
+                          const TextStyle(fontSize: 13, color: Colors.black87)),
+                ],
+              );
+            }).toList(),
           ),
         ],
       ),
