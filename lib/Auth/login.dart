@@ -1,10 +1,9 @@
 import 'package:envolet_frontend/Auth/register.dart';
-import 'package:envolet_frontend/Screens/HomePage.dart';
+import 'package:envolet_frontend/Screens/AssetsPage.dart';
 import 'package:envolet_frontend/Services/api.dart';
 import 'package:envolet_frontend/Util/Helper/helper.dart';
 import 'package:envolet_frontend/Util/alart.dart';
 
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 class LoginPage extends StatefulWidget {
@@ -17,17 +16,28 @@ class LoginPage extends StatefulWidget {
 final TextEditingController _emailController = TextEditingController();
 final TextEditingController _passwordController = TextEditingController();
 
+void clearLoginControllers() {
+  _emailController.clear();
+  _passwordController.clear();
+}
+
 class _LoginPageState extends State<LoginPage> {
+  bool _obscurePassword = true;
+
+  @override
   Widget build(BuildContext context) {
+    final height = Helper().getDeviceHeight(context);
+    final width = Helper().getDeviceWidth(context);
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
         child: Padding(
           padding: EdgeInsets.only(
-            top: MediaQuery.of(context).size.height * 0.03,
-            bottom: MediaQuery.of(context).size.height * 0.03,
-            left: MediaQuery.of(context).size.width * 0.04,
-            right: MediaQuery.of(context).size.width * 0.04,
+            top: height * 0.03,
+            bottom: height * 0.03,
+            left: width * 0.04,
+            right: width * 0.04,
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -36,51 +46,43 @@ class _LoginPageState extends State<LoginPage> {
                 child: Center(
                   child: Image.asset(
                     'images/loginOnboarding.png',
-                    height: Helper().getDeviceHeight(context) / 2,
+                    height: height / 2,
                   ),
                 ),
               ),
               Text(
                 'Welcome Back!',
                 style: TextStyle(
-                  fontSize: 24,
+                  fontSize: height / 30,
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              SizedBox(
-                height: Helper().getDeviceHeight(context) / 60,
-              ),
+              SizedBox(height: height / 60),
               Text(
                 'Please login to your account',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 16,
+                  fontSize: height / 45,
                   color: Colors.grey,
                 ),
               ),
-              SizedBox(
-                height: Helper().getDeviceHeight(context) / 30,
-              ),
+              SizedBox(height: height / 30),
               _buildTextField(
-                  hintText: 'Email',
-                  icon: Icons.email,
-                  obscureText: false,
-                  controller: _emailController),
-              SizedBox(
-                height: Helper().getDeviceHeight(context) / 60,
+                hintText: 'Email',
+                icon: Icons.email,
+                obscureText: false,
+                controller: _emailController,
               ),
+              SizedBox(height: height / 60),
               _buildTextField(
-                  hintText: 'Password',
-                  icon: Icons.lock,
-                  obscureText: true,
-                  controller: _passwordController),
-              SizedBox(
-                height: Helper().getDeviceHeight(context) / 30,
+                hintText: 'Password',
+                icon: Icons.lock,
+                obscureText: _obscurePassword,
+                controller: _passwordController,
               ),
-              _buildLoginButton(context),
-              SizedBox(
-                height: Helper().getDeviceHeight(context) / 60,
-              ),
+              SizedBox(height: height / 30),
+              _buildLoginButton(context, height),
+              SizedBox(height: height / 60),
               dontHaveAccount(),
             ],
           ),
@@ -89,11 +91,12 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  Widget _buildTextField(
-      {required String hintText,
-      required IconData icon,
-      required bool obscureText,
-      required TextEditingController controller}) {
+  Widget _buildTextField({
+    required String hintText,
+    required IconData icon,
+    required bool obscureText,
+    required TextEditingController controller,
+  }) {
     return TextField(
       controller: controller,
       obscureText: obscureText,
@@ -102,6 +105,19 @@ class _LoginPageState extends State<LoginPage> {
         hintText: hintText,
         hintStyle: TextStyle(color: Colors.grey),
         prefixIcon: Icon(icon, color: Colors.grey),
+        suffixIcon: hintText == "Password"
+            ? IconButton(
+                icon: Icon(
+                  obscureText ? Icons.visibility_off : Icons.visibility,
+                  color: Colors.grey,
+                ),
+                onPressed: () {
+                  setState(() {
+                    _obscurePassword = !_obscurePassword;
+                  });
+                },
+              )
+            : null,
         filled: true,
         fillColor: Colors.white70,
         focusedBorder: OutlineInputBorder(
@@ -116,7 +132,7 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  Widget _buildLoginButton(BuildContext context) {
+  Widget _buildLoginButton(BuildContext context, double height) {
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
@@ -135,7 +151,8 @@ class _LoginPageState extends State<LoginPage> {
           if (result != null) {
             print("✅ Login successful. Token: ${result.token}");
 
-            Util.navigateWithFade(context, HomePage());
+            clearLoginControllers();
+            Util.navigateWithFade(context, AssetsPage());
           } else {
             print("❌ Login failed for email: $email");
             Util.errorAlertAndNavigate(
@@ -147,7 +164,7 @@ class _LoginPageState extends State<LoginPage> {
         },
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.blue,
-          padding: EdgeInsets.symmetric(vertical: 16),
+          padding: EdgeInsets.symmetric(vertical: height / 45),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8),
           ),
@@ -155,7 +172,7 @@ class _LoginPageState extends State<LoginPage> {
         child: Text(
           'Login',
           style: TextStyle(
-            fontSize: 18,
+            fontSize: height / 45,
             color: Colors.white,
           ),
         ),

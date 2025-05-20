@@ -1,7 +1,8 @@
 import 'package:envolet_frontend/Auth/login.dart';
-import 'package:envolet_frontend/Screens/HomePage.dart';
+import 'package:envolet_frontend/Screens/AssetsPage.dart';
 import 'package:envolet_frontend/Services/api.dart';
 import 'package:envolet_frontend/Util/alart.dart';
+import 'package:envolet_frontend/Util/Helper/helper.dart';
 import 'package:flutter/material.dart';
 
 class RegisterPage extends StatefulWidget {
@@ -17,37 +18,20 @@ class _RegisterPageState extends State<RegisterPage> {
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _verifypasswordController =
       TextEditingController();
-  var util_object = Util();
-  void initState() {
-    super.initState();
-    _emailController.text = ""; // You can set an initial value here if needed
-    _passwordController.text =
-        ""; // You can set an initial value here if needed
-    _verifypasswordController.text = "";
-  }
 
   bool _obscureText = true;
   bool _verifyObscureText = true;
   bool _passwordsMatch = true;
   bool _verifyFieldTouched = false;
 
-/*
-  Future<void> createUserWithEmailAndPassword() async {
-    print("BUTTON IS PRESSED");
-    print(_emailController.text.trim());
-    print(_passwordController.text.trim());
-    setState(() {});
-    try {
-      await Auth().createUserWithEmailAndPassword(
-          email: _emailController.text.trim(),
-          password: _passwordController.text.trim());
-    } on FirebaseAuthException catch (e) {
-      setState(() {
-        print(e.message);
-      });
-    }
+  @override
+  void initState() {
+    super.initState();
+    _emailController.text = "";
+    _passwordController.text = "";
+    _verifypasswordController.text = "";
   }
-*/
+
   void _validatePasswords() {
     setState(() {
       _passwordsMatch =
@@ -65,16 +49,35 @@ class _RegisterPageState extends State<RegisterPage> {
   }
 
   bool _isEmailValid(String email) {
-    final RegExp regex = RegExp(r"^[a-zA-Z0-9.]+@[a-zA-Z0-9]+\.[a-zA-Z]+");
+    final RegExp regex = RegExp(r"^[a-zA-Z0-9.]+@[a-zA-Z0-9]+\.[a-zA-Z]+$");
     return regex.hasMatch(email);
   }
 
+  bool get _isFormValid {
+    return _passwordsMatch &&
+        _verifyFieldTouched &&
+        _isEmailValid(_emailController.text) &&
+        _emailController.text.trim().isNotEmpty &&
+        _passwordController.text.trim().isNotEmpty &&
+        _verifypasswordController.text.trim().isNotEmpty &&
+        _fullNameController.text.trim().isNotEmpty;
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final height = Helper().getDeviceHeight(context);
+    final width = Helper().getDeviceWidth(context);
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: EdgeInsets.only(
+            top: height * 0.03,
+            bottom: height * 0.03,
+            left: width * 0.04,
+            right: width * 0.04,
+          ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
@@ -82,79 +85,72 @@ class _RegisterPageState extends State<RegisterPage> {
                 child: Center(
                   child: Image.asset(
                     'images/registerOnboarding.png',
-                    height: 250,
+                    height: height / 2.3,
                   ),
                 ),
               ),
               Text(
                 'Create an Account',
                 style: TextStyle(
-                  fontSize: 24,
+                  fontSize: height / 35,
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              SizedBox(height: 16),
+              SizedBox(height: height / 60),
               Text(
                 'Please fill in the details below to create a new account.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 16,
+                  fontSize: height / 50,
                   color: Colors.grey,
                 ),
               ),
-              SizedBox(height: 32),
+              SizedBox(height: height / 30),
               _buildTextField(
                 currentController: _fullNameController,
                 hintText: 'Full Name',
                 icon: Icons.person,
                 obscureText: false,
               ),
-              SizedBox(height: 16),
+              SizedBox(height: height / 60),
               _buildTextField(
                 currentController: _emailController,
                 hintText: 'Email',
                 icon: Icons.email,
                 obscureText: false,
               ),
-              SizedBox(height: 16),
+              SizedBox(height: height / 60),
               _buildTextFieldPassword(
                 currentController: _passwordController,
                 hintText: 'Password',
                 icon: Icons.lock,
                 obscureText: _obscureText,
-                onToggle: () {
-                  setState(() {
-                    _obscureText = !_obscureText;
-                  });
-                },
+                onToggle: () => setState(() => _obscureText = !_obscureText),
                 onChanged: _validatePasswords,
               ),
-              SizedBox(height: 16),
+              SizedBox(height: height / 60),
               _buildTextFieldPassword(
                 currentController: _verifypasswordController,
                 hintText: 'Verify Password',
                 icon: Icons.lock,
                 obscureText: _verifyObscureText,
-                onToggle: () {
-                  setState(() {
-                    _verifyObscureText = !_verifyObscureText;
-                    _passwordsMatch = _passwordController.text ==
-                        _verifypasswordController.text;
-                  });
-                },
+                onToggle: () => setState(() {
+                  _verifyObscureText = !_verifyObscureText;
+                  _validatePasswords();
+                }),
                 onChanged: _onVerifyFieldTouched,
               ),
               if (!_passwordsMatch && _verifyFieldTouched)
                 Padding(
-                  padding: const EdgeInsets.only(top: 8.0),
+                  padding: EdgeInsets.only(top: height / 100),
                   child: Text(
                     'Passwords do not match',
                     style: TextStyle(color: Colors.red),
                   ),
                 ),
-              SizedBox(height: 32),
-              _buildRegisterButton(context),
-              SizedBox(height: 16),
+              SizedBox(height: height / 30),
+              _buildRegisterButton(context, height),
+              SizedBox(height: height / 60),
               _buildLoginText(context),
             ],
           ),
@@ -163,14 +159,16 @@ class _RegisterPageState extends State<RegisterPage> {
     );
   }
 
-  Widget _buildTextField(
-      {required String hintText,
-      required IconData icon,
-      required bool obscureText,
-      required TextEditingController currentController}) {
+  Widget _buildTextField({
+    required String hintText,
+    required IconData icon,
+    required bool obscureText,
+    required TextEditingController currentController,
+  }) {
     return TextField(
       controller: currentController,
       obscureText: obscureText,
+      onChanged: (_) => setState(() {}),
       style: TextStyle(color: Colors.black),
       decoration: InputDecoration(
         hintText: hintText,
@@ -202,7 +200,10 @@ class _RegisterPageState extends State<RegisterPage> {
       controller: currentController,
       obscureText: obscureText,
       style: TextStyle(color: Colors.black),
-      onChanged: (value) => onChanged(),
+      onChanged: (value) {
+        onChanged();
+        setState(() {});
+      },
       decoration: InputDecoration(
         hintText: hintText,
         hintStyle: TextStyle(color: Colors.grey),
@@ -228,75 +229,73 @@ class _RegisterPageState extends State<RegisterPage> {
     );
   }
 
-  Widget _buildRegisterButton(BuildContext context) {
+  Widget _buildRegisterButton(BuildContext context, double height) {
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
-        onPressed: _passwordsMatch &&
-                _verifyFieldTouched &&
-                _isEmailValid(_emailController.text)
+        onPressed: _isFormValid
             ? () async {
                 final email = _emailController.text.trim();
                 final password = _passwordController.text.trim();
-
-                print("📨 Register pressed with email: $email");
+                final fullName = _fullNameController.text.trim();
+                final nameParts = fullName.split(' ');
+                final surname = nameParts.length > 1 ? nameParts.last : '';
+                final name = nameParts.length > 1
+                    ? nameParts.sublist(0, nameParts.length - 1).join(' ')
+                    : fullName;
 
                 final result = await Api.registerCall(
                   email: email,
                   password: password,
+                  name: name,
+                  surname: surname,
                 );
 
                 if (result != null) {
-                  print("✅ Register successful. Token: ${result.token}");
+                  _fullNameController.clear();
+                  _emailController.clear();
+                  _passwordController.clear();
+                  _verifypasswordController.clear();
 
                   Util.successAlertAndGoToPage(
                     context,
                     "Your account has been created successfully!",
-                    HomePage(),
+                    AssetsPage(),
                   );
                 } else {
-                  print("❌ Register failed for email: $email");
-
                   Util.errorAlertAndNavigate(
                     context,
-                    "Registration failed. Please try again with a valid email and password.",
+                    "Registration failed. Please try again.",
                     "Register Error",
                   );
                 }
               }
             : null,
         style: ElevatedButton.styleFrom(
-          backgroundColor: _passwordsMatch && _verifyFieldTouched
-              ? Colors.blue
-              : Colors.grey,
-          padding: EdgeInsets.symmetric(vertical: 16),
+          backgroundColor: _isFormValid ? Colors.blue : Colors.grey,
+          padding: EdgeInsets.symmetric(vertical: height / 45),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8),
           ),
         ),
         child: Text(
           'Register',
-          style: TextStyle(
-            fontSize: 18,
-            color: Colors.white,
-          ),
+          style: TextStyle(fontSize: height / 45, color: Colors.white),
         ),
       ),
     );
   }
-}
 
-Widget _buildLoginText(BuildContext context) {
-  return GestureDetector(
-    onTap: () {
-      Navigator.of(context)
-          .push(MaterialPageRoute(builder: (context) => LoginPage()));
-    },
-    child: Text(
-      'Already have an account? Login',
-      style: TextStyle(
-        color: Colors.blue,
+  Widget _buildLoginText(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.of(context)
+            .push(MaterialPageRoute(builder: (context) => LoginPage()));
+      },
+      child: Text(
+        'Already have an account? Login',
+        style: TextStyle(color: Colors.blue),
       ),
-    ),
-  );
+    );
+  }
 }

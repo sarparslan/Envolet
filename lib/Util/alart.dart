@@ -1,6 +1,9 @@
+import 'package:envolet_frontend/Auth/login.dart';
+import 'package:envolet_frontend/Services/api.dart';
 import 'package:flutter/material.dart';
 import 'package:quickalert/quickalert.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class Util {
   static void successAlertAndNavigate(BuildContext context, String title) {
@@ -23,21 +26,31 @@ class Util {
     QuickAlert.show(
       context: context,
       type: QuickAlertType.success,
+      title: "Success",
       text: title,
-      confirmBtnColor: Colors.green,
-      confirmBtnText: "Continue",
+      confirmBtnText: "Confirm",
+      confirmBtnColor: const Color(0xFF2D6BFF), // tam mavi
+      backgroundColor: Colors.white,
+      barrierColor: Colors.black.withOpacity(0.2),
+      titleColor: Colors.black,
+      textColor: Colors.black54,
+      confirmBtnTextStyle: const TextStyle(
+        fontWeight: FontWeight.w600,
+        color: Colors.white,
+        fontSize: 16,
+      ),
       onConfirmBtnTap: () {
         Navigator.of(context).pop();
-        Future.delayed(Duration(milliseconds: 300), () {
+        Future.delayed(const Duration(milliseconds: 300), () {
           Navigator.of(context).pushReplacement(
             PageRouteBuilder(
-              transitionDuration: Duration(milliseconds: 600),
+              transitionDuration: const Duration(milliseconds: 600),
               pageBuilder: (context, animation, secondaryAnimation) =>
                   destinationPage,
               transitionsBuilder:
                   (context, animation, secondaryAnimation, child) {
                 final offsetAnimation = Tween<Offset>(
-                  begin: Offset(1.0, 0.0),
+                  begin: const Offset(1.0, 0.0),
                   end: Offset.zero,
                 ).animate(CurvedAnimation(
                   parent: animation,
@@ -72,7 +85,7 @@ class Util {
             destinationPage,
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           final offsetAnimation = Tween<Offset>(
-            begin: Offset(1.0, 0.0), // sağdan gelsin
+            begin: Offset(1.0, 0.0),
             end: Offset.zero,
           ).animate(CurvedAnimation(
             parent: animation,
@@ -101,10 +114,13 @@ class Util {
     QuickAlert.show(
       context: context,
       type: QuickAlertType.error,
-      text: content,
       title: title,
+      text: content,
+      confirmBtnText: 'Try Again',
       confirmBtnColor: Colors.red,
-      confirmBtnText: "Continue",
+      backgroundColor: Colors.white,
+      titleColor: Colors.black,
+      textColor: Colors.black87,
     );
   }
 
@@ -125,5 +141,214 @@ class Util {
 
   static void hideLoadingDialog(BuildContext context) {
     Navigator.of(context).pop();
+  }
+
+  static void showLogoutDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16.0),
+          ),
+          backgroundColor: Colors.white,
+          child: Padding(
+            padding:
+                const EdgeInsets.symmetric(vertical: 20.0, horizontal: 16.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Padding(
+                  padding: EdgeInsets.only(right: 230),
+                  child: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: Colors.amber[100],
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Text(
+                  "Are you sure you want to sign out?",
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 20),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    minimumSize: const Size(double.infinity, 48),
+                  ),
+                  onPressed: () async {
+                    SharedPreferences pref =
+                        await SharedPreferences.getInstance();
+                    await pref.clear();
+                    Navigator.of(context).pop();
+                    Util.navigateWithFade(context, LoginPage());
+                  },
+                  child: const Text(
+                    "Confirm",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                OutlinedButton(
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: Colors.black),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    minimumSize: const Size(double.infinity, 48),
+                  ),
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text(
+                    "Cancel",
+                    style: TextStyle(
+                      color: Colors.black,
+                      fontWeight: FontWeight.w500,
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  static void showDeleteAccountDialog(BuildContext context) {
+    bool isConfirmed = false;
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return Dialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              backgroundColor: Colors.white,
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: IntrinsicHeight(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Center(
+                        child: Padding(
+                          padding: EdgeInsets.only(right: 230),
+                          child: Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: Colors.red.shade100,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(Icons.delete_outline,
+                                color: Colors.red),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      const Center(
+                        child: Text(
+                          "Deleting your account",
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      const Center(
+                        child: Text(
+                          "Are you sure you want to delete your account?\nThis action cannot be undone.",
+                          textAlign: TextAlign.center,
+                          style: TextStyle(fontSize: 14, height: 1.4),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      ElevatedButton(
+                        onPressed: isConfirmed
+                            ? () async {
+                                await Api.deleteAccount();
+                                Navigator.of(context).pop();
+                                Util.navigateWithFade(context, LoginPage());
+                              }
+                            : null,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                          disabledBackgroundColor: Colors.grey.shade300,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          minimumSize: const Size(double.infinity, 48),
+                        ),
+                        child: const Text(
+                          "Delete",
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      OutlinedButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: Colors.black),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          minimumSize: const Size(double.infinity, 48),
+                        ),
+                        child: const Text(
+                          "Cancel",
+                          style: TextStyle(
+                            color: Colors.black,
+                            fontWeight: FontWeight.w500,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Row(
+                        children: [
+                          Checkbox(
+                            value: isConfirmed,
+                            onChanged: (val) => setState(() {
+                              isConfirmed = val ?? false;
+                            }),
+                          ),
+                          const Text("I am sure."),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 }

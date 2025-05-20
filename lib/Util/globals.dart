@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/material.dart';
 
 bool _isDarkMode = false;
+
 String globalDiffLevel = 'Def';
 bool get isDarkMode => _isDarkMode;
 
@@ -37,6 +38,24 @@ void pushWithFadeTransition(BuildContext context, Widget destinationPage,
       return FadeTransition(opacity: animation.drive(tween), child: child);
     },
   ));
+}
+
+String _globalCurrency = "USD";
+String get globalCurrency => _globalCurrency;
+
+set globalCurrency(String value) {
+  _globalCurrency = value;
+  _saveCurrencyToPrefs();
+}
+
+Future<void> loadCurrencyPreference() async {
+  final prefs = await SharedPreferences.getInstance();
+  _globalCurrency = prefs.getString('currency') ?? "USD";
+}
+
+Future<void> _saveCurrencyToPrefs() async {
+  final prefs = await SharedPreferences.getInstance();
+  prefs.setString("currency", _globalCurrency);
 }
 
 bool isConnected = true;

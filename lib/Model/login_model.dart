@@ -1,23 +1,22 @@
 class LoginModel {
-  final bool success;
   final String token;
+  final String name;
+  final String surname;
+  final String email;
 
   LoginModel({
-    required this.success,
     required this.token,
+    required this.name,
+    required this.surname,
+    required this.email,
   });
 
   factory LoginModel.fromJson(Map<String, dynamic> json) {
     return LoginModel(
-      success: json["success"],
-      token: json["token"],
+      token: json['token'],
+      name: json['user']['name'],
+      surname: json['user']['surname'],
+      email: json['user']['email'],
     );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      "success": success,
-      "token": token,
-    };
   }
 }

@@ -1,15 +1,14 @@
-import 'dart:ui'; // Bulanıklık efekti için gerekli
+import 'dart:ui';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:envolet_frontend/Screens/HomePage.dart';
 import 'package:envolet_frontend/Screens/SettingsPage.dart';
 import 'package:envolet_frontend/Screens/TransactionPage.dart';
 import 'package:envolet_frontend/Screens/AssetsPage.dart';
-import 'package:envolet_frontend/Screens/TrackerPage.dart'; // InsightsPage import edildi
+import 'package:envolet_frontend/Screens/TrackerPage.dart';
+import 'package:envolet_frontend/Util/globals.dart'; // <--- unutma!
 
 enum Pages {
-  HomePage,
   SettingsPage,
   TransactionPage,
   TrackerPage,
@@ -23,6 +22,17 @@ class BottomNavBarWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final navColors = {
+      "backgroundColor": isDarkMode
+          ? Colors.black.withOpacity(0.6)
+          : Colors.white.withOpacity(0.2),
+      "borderColor": isDarkMode
+          ? Colors.white.withOpacity(0.1)
+          : Colors.white.withOpacity(0.3),
+      "iconColor": isDarkMode ? Colors.white70 : Colors.black,
+      "activeColor": Colors.blue,
+    };
+
     double height = MediaQuery.of(context).size.height;
     double aspectRatio = height / MediaQuery.of(context).size.width;
     double scalingFactor =
@@ -38,22 +48,21 @@ class BottomNavBarWidget extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
           margin: const EdgeInsets.symmetric(horizontal: 20),
           decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: Colors.white.withOpacity(0.3))),
+            color: navColors["backgroundColor"],
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: navColors["borderColor"]!),
+          ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _buildNavItem(
-                  Icons.home, "Home", Pages.HomePage, iconSize, context),
-              _buildNavItem(FontAwesomeIcons.moneyBillTransfer, "Transaction",
-                  Pages.TransactionPage, iconSize, context),
+              _buildNavItem(Icons.wallet, "Assets", Pages.AssetsPage, iconSize,
+                  context, navColors),
               _buildNavItem(Icons.bar_chart, "Insights", Pages.TrackerPage,
-                  iconSize, context), // Yeni öğe
-              _buildNavItem(
-                  Icons.wallet, "Assets", Pages.AssetsPage, iconSize, context),
+                  iconSize, context, navColors),
+              _buildNavItem(FontAwesomeIcons.moneyBillTransfer, "Transaction",
+                  Pages.TransactionPage, iconSize, context, navColors),
               _buildNavItem(FontAwesomeIcons.gear, "Settings",
-                  Pages.SettingsPage, iconSize, context),
+                  Pages.SettingsPage, iconSize, context, navColors),
             ],
           ),
         ),
@@ -62,7 +71,7 @@ class BottomNavBarWidget extends StatelessWidget {
   }
 
   Widget _buildNavItem(IconData icon, String label, Pages page, double iconSize,
-      BuildContext context) {
+      BuildContext context, Map<String, Color> navColors) {
     bool isSelected = currentPage == page;
     return GestureDetector(
       onTap: () {
@@ -70,14 +79,13 @@ class BottomNavBarWidget extends StatelessWidget {
           Navigator.of(context).push(PageRouteBuilder(
             pageBuilder: (_, __, ___) {
               switch (page) {
-                case Pages.HomePage:
-                  return HomePage();
-                case Pages.TransactionPage:
-                  return TransactionPage();
-                case Pages.TrackerPage:
-                  return TrackerPage(); // Yeni case
                 case Pages.AssetsPage:
                   return AssetsPage();
+                case Pages.TrackerPage:
+                  return TrackerPage();
+
+                case Pages.TransactionPage:
+                  return TransactionPage();
                 case Pages.SettingsPage:
                   return SettingsPage();
               }
@@ -96,13 +104,16 @@ class BottomNavBarWidget extends StatelessWidget {
             height: 3,
             width: isSelected ? 20 : 0,
             decoration: BoxDecoration(
-              color: Colors.blue,
+              color: navColors["activeColor"],
               borderRadius: BorderRadius.circular(20),
             ),
             margin: EdgeInsets.only(bottom: 3),
           ),
           Icon(icon,
-              size: iconSize, color: isSelected ? Colors.blue : Colors.black),
+              size: iconSize,
+              color: isSelected
+                  ? navColors["activeColor"]
+                  : navColors["iconColor"]),
         ],
       ),
     );

@@ -1,3 +1,5 @@
+import 'package:dotted_border/dotted_border.dart';
+import 'package:envolet_frontend/Widgets/CardAdditionWidget.dart';
 import 'package:envolet_frontend/Widgets/bottomBarWidget.dart';
 import 'package:flutter/material.dart';
 
@@ -91,16 +93,16 @@ class _AssetsPageState extends State<AssetsPage> {
     const double overlap = 50;
 
     return SizedBox(
-      height: baseCardHeight + (_cards.length - 2) * overlap + 100,
+      height: baseCardHeight + (_cards.length - 2) * overlap,
       child: Stack(
         clipBehavior: Clip.none,
         children: List.generate(_cards.length, (i) {
-          final index = _cards.length - 1 - i; // ters çizim
+          final index = _cards.length - 1 - i;
           final isTopCard = index == 0;
           final isSelected = selectedCardIndex == index;
 
           return Positioned(
-            top: index * overlap,
+            top: i * overlap,
             left: 0,
             right: 0,
             child: GestureDetector(
@@ -120,6 +122,45 @@ class _AssetsPageState extends State<AssetsPage> {
     );
   }
 
+  Widget _buildAddCardBox() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: InkWell(
+        onTap: () async {
+          final newCard = await showDialog<Map<String, String>>(
+            context: context,
+            builder: (context) => CardAdditionDialog(),
+          );
+          if (newCard != null) {
+            setState(() {
+              _cards.add(newCard);
+            });
+          }
+        },
+        child: DottedBorder(
+          borderType: BorderType.RRect,
+          radius: Radius.circular(12),
+          padding: EdgeInsets.all(20),
+          color: Colors.grey,
+          dashPattern: [8, 4],
+          strokeWidth: 2,
+          child: Center(
+            child: Column(
+              children: [
+                Icon(Icons.add, size: 32, color: Colors.grey),
+                SizedBox(height: 10),
+                Text(
+                  "Tap to add a new card",
+                  style: TextStyle(fontSize: 16, color: Colors.grey),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -133,9 +174,9 @@ class _AssetsPageState extends State<AssetsPage> {
               const Text("Assets",
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
               const SizedBox(height: 20),
-              SingleChildScrollView(
-                child: _buildStackedWalletCards(),
-              ),
+              _buildStackedWalletCards(),
+              const SizedBox(height: 40),
+              _buildAddCardBox(),
             ],
           ),
         ),
