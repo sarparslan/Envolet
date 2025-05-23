@@ -6,6 +6,7 @@ import 'package:envolet_frontend/Model/register_model.dart';
 
 class Api {
   static const String baseUrl = "http://localhost:5001";
+//  static const String baseUrl = 'http://172.20.10.6:5001';
 
   static Future<LoginModel?> loginCall({
     required String email,

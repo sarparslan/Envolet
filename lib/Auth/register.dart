@@ -70,7 +70,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      body: SafeArea(
+      body: SingleChildScrollView(
         child: Padding(
           padding: EdgeInsets.only(
             top: height * 0.03,
@@ -81,11 +81,12 @@ class _RegisterPageState extends State<RegisterPage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
-              Expanded(
+              SizedBox(
+                height: height / 3.1,
                 child: Center(
                   child: Image.asset(
                     'images/registerOnboarding.png',
-                    height: height / 2.3,
+                    fit: BoxFit.contain,
                   ),
                 ),
               ),

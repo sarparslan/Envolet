@@ -1,6 +1,8 @@
 import 'package:envolet_frontend/Auth/login.dart';
 import 'package:envolet_frontend/Services/api.dart';
+import 'package:envolet_frontend/Util/globals.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:quickalert/quickalert.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -28,7 +30,7 @@ class Util {
       type: QuickAlertType.success,
       title: "Success",
       text: title,
-      confirmBtnText: "Confirm",
+      confirmBtnText: "Ok",
       confirmBtnColor: const Color(0xFF2D6BFF), // tam mavi
       backgroundColor: Colors.white,
       barrierColor: Colors.black.withOpacity(0.2),
@@ -349,6 +351,203 @@ class Util {
           },
         );
       },
+    );
+  }
+
+  static void showSuccessAlert(BuildContext context, String message) {
+    QuickAlert.show(
+      context: context,
+      type: QuickAlertType.success,
+      text: message,
+      confirmBtnText: "Continue",
+      confirmBtnColor: const Color(0xFF2D6BFF),
+      backgroundColor: Colors.white,
+      titleColor: Colors.black,
+      textColor: Colors.black54,
+      confirmBtnTextStyle: const TextStyle(
+        fontWeight: FontWeight.w600,
+        color: Colors.white,
+        fontSize: 16,
+      ),
+    );
+  }
+
+  static void showTransactionUpdateSuccessBottomSheet(
+    BuildContext context, {
+    required String category,
+    required double amount,
+    required DateTime date,
+  }) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      isDismissible: true,
+      enableDrag: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) {
+        return GestureDetector(
+          onTap: () => Navigator.of(context).pop(),
+          child: Container(
+            color: Colors.transparent,
+            child: GestureDetector(
+              onTap: () {}, // İç tıklamayı engelle
+              child: Container(
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                ),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 72,
+                      height: 72,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF00C851), // QuickAlert success yeşili
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Center(
+                        child: Icon(
+                          Icons.check,
+                          color: Colors.white,
+                          size: 40,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      "Transaction Updated!",
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    const Text(
+                      "Your expense has been updated!",
+                      style: TextStyle(fontSize: 14, color: Colors.black54),
+                    ),
+                    const SizedBox(height: 24),
+                    _SuccessInfoRow(
+                        "Date", DateFormat('dd MMM, yyyy').format(date)),
+                    const SizedBox(height: 12),
+                    _SuccessInfoRow("Category", category),
+                    const SizedBox(height: 12),
+                    _SuccessInfoRow(
+                        "Amount", "${amount.toString()} $globalCurrency"),
+                    const SizedBox(height: 12),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  static void showTransactionSuccessBottomSheet(
+    BuildContext context, {
+    required String category,
+    required double amount,
+    required DateTime date,
+  }) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      isDismissible: true,
+      enableDrag: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) {
+        return GestureDetector(
+          onTap: () => Navigator.of(context).pop(),
+          child: Container(
+            color: Colors.transparent,
+            child: GestureDetector(
+              onTap: () {}, // İç tıklamayı engelle
+              child: Container(
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                ),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 72,
+                      height: 72,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF00C851), // QuickAlert success yeşili
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Center(
+                        child: Icon(
+                          Icons.check,
+                          color: Colors.white,
+                          size: 40,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      "Transaction Successful",
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    const Text(
+                      "Your expense has been recorded!",
+                      style: TextStyle(fontSize: 14, color: Colors.black54),
+                    ),
+                    const SizedBox(height: 24),
+                    _SuccessInfoRow(
+                        "Date", DateFormat('dd MMM, yyyy').format(date)),
+                    const SizedBox(height: 12),
+                    _SuccessInfoRow("Category", category),
+                    const SizedBox(height: 12),
+                    _SuccessInfoRow(
+                        "Amount", "${amount.toString()} $globalCurrency"),
+                    const SizedBox(height: 12),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  static Widget _SuccessInfoRow(String label, String value,
+      {bool isCurrency = false}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label,
+            style: const TextStyle(fontSize: 14, color: Colors.black54)),
+        Row(
+          children: [
+            Text(
+              value,
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+            ),
+            if (isCurrency) ...[
+              const SizedBox(width: 6),
+              Icon(
+                currencyIcons[globalCurrency] ?? Icons.attach_money,
+                size: 14,
+                color: Colors.black87,
+              ),
+            ]
+          ],
+        ),
+      ],
     );
   }
 }

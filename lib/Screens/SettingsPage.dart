@@ -41,12 +41,9 @@ class _SettingsPageState extends State<SettingsPage> {
     "EUR",
     "GBP",
     "JPY",
-    "AUD",
-    "CAD",
-    "CHF",
-    "CNY",
-    "SEK",
     "TL"
+        "CHF",
+    "SEK",
   ];
 
   String selectedCurrency = globalCurrency;
@@ -132,19 +129,19 @@ class _SettingsPageState extends State<SettingsPage> {
         isDarkMode ? const Color.fromARGB(26, 15, 13, 13) : Colors.white;
     final dividerColor = isDarkMode ? Colors.white : Colors.grey.shade300;
     return Scaffold(
+      appBar: AppBar(
+        title: Text("Settings", style: TextStyle(color: Colors.black)),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        automaticallyImplyLeading: false,
+      ),
       backgroundColor: bgColor,
       body: Padding(
-        padding: EdgeInsets.only(top: height * 0.04),
+        padding: EdgeInsets.only(top: height * 0.005),
         child: ListView(
           padding: EdgeInsets.symmetric(
               horizontal: width * 0.05, vertical: height * 0.03),
           children: [
-            Text("Settings",
-                style: TextStyle(
-                    fontSize: height * 0.032,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black)),
-            SizedBox(height: height * 0.03),
             _SectionHeader("Account Info", Colors.black),
             _SettingsTileNoArrow(
                 title: "Name",
@@ -154,7 +151,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 title: "Email",
                 value: userEmail ?? "loading...",
                 textColor: Colors.black),
-            SizedBox(height: height * 0.03),
+            Divider(color: dividerColor),
             _SectionHeader("App Preferences", Colors.black),
             ListTile(
               contentPadding: EdgeInsets.zero,
@@ -174,7 +171,7 @@ class _SettingsPageState extends State<SettingsPage> {
               ),
               onTap: _showCurrencyPicker,
             ),
-            SizedBox(height: height * 0.03),
+            Divider(color: dividerColor),
             _SectionHeader("About", Colors.black),
             _InfoTileWithIcon(
                 title: "About Envolet",
@@ -233,7 +230,7 @@ class _SectionHeader extends StatelessWidget {
       child: Text(title,
           style: TextStyle(
               fontSize: height * 0.022,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w600,
               color: color)),
     );
   }

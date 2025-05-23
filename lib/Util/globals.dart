@@ -3,7 +3,7 @@ library globals;
 
 import 'dart:async';
 
-import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/material.dart';
 
@@ -41,6 +41,16 @@ void pushWithFadeTransition(BuildContext context, Widget destinationPage,
 }
 
 String _globalCurrency = "USD";
+final Map<String, IconData> currencyIcons = {
+  "USD": FontAwesomeIcons.dollarSign,
+  "EUR": FontAwesomeIcons.euroSign,
+  "GBP": FontAwesomeIcons.sterlingSign,
+  "JPY": FontAwesomeIcons.yenSign,
+  "TL": FontAwesomeIcons.turkishLiraSign,
+  "CHF": FontAwesomeIcons.francSign,
+  "SEK": FontAwesomeIcons.k,
+};
+
 String get globalCurrency => _globalCurrency;
 
 set globalCurrency(String value) {
@@ -59,22 +69,6 @@ Future<void> _saveCurrencyToPrefs() async {
 }
 
 bool isConnected = true;
-
-late StreamSubscription<ConnectivityResult> connectivitySubscription;
-
-void initializeConnectivityListener() {
-  connectivitySubscription =
-      Connectivity().onConnectivityChanged.listen((ConnectivityResult result) {
-    bool currentStatus = result != ConnectivityResult.none;
-    if (isConnected != currentStatus) {
-      isConnected = currentStatus;
-    }
-  });
-}
-
-void disposeConnectivityListener() {
-  connectivitySubscription.cancel();
-}
 
 void popWithFadeTransition(BuildContext context, {int durationMillis = 300}) {
   Navigator.of(context).pop(PageRouteBuilder(
