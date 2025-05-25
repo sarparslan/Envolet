@@ -6,7 +6,8 @@ import 'package:envolet_frontend/Model/register_model.dart';
 
 class Api {
   static const String baseUrl = "http://localhost:5001";
-//  static const String baseUrl = 'http://172.20.10.6:5001';
+  //static const String baseUrl = 'http://172.20.10.6:5001';
+  // static const String baseUrl = 'http://192.168.0.23:5001';
 
   static Future<LoginModel?> loginCall({
     required String email,
@@ -183,9 +184,9 @@ class Api {
       return [];
     }
   }
-
 // ------------------ Transactions ------------------
 
+  // Add Transaction
   static Future<bool> addTransaction({
     required double amount,
     required String category,
@@ -221,6 +222,7 @@ class Api {
     }
   }
 
+  // Get all Transactions
   static Future<List<Map<String, dynamic>>> getTransactions() async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString("token");
@@ -240,6 +242,70 @@ class Api {
     } else {
       print("GetTransactions failed: ${response.body}");
       return [];
+    }
+  }
+
+  // Update Transaction
+  static Future<bool> updateTransaction({
+    required String id,
+    required double amount,
+    required String category,
+    required String date,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString("token");
+    if (token == null) return false;
+
+    final header = {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer $token',
+    };
+
+    final body = {
+      "amount": amount,
+      "category": category,
+      "date": date,
+    };
+
+    final response = await http.put(
+      Uri.parse("$baseUrl/transactions/$id"),
+      headers: header,
+      body: jsonEncode(body),
+    );
+
+    if (response.statusCode == 200) {
+      print("Transaction updated");
+      return true;
+    } else {
+      print("UpdateTransaction failed: ${response.body}");
+      return false;
+    }
+  }
+
+  // Delete Transaction
+  static Future<bool> deleteTransaction({
+    required String id,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString("token");
+    if (token == null) return false;
+
+    final header = {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer $token',
+    };
+
+    final response = await http.delete(
+      Uri.parse("$baseUrl/transactions/$id"),
+      headers: header,
+    );
+
+    if (response.statusCode == 200) {
+      print("Transaction deleted");
+      return true;
+    } else {
+      print("DeleteTransaction failed: ${response.body}");
+      return false;
     }
   }
 }

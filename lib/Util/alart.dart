@@ -166,9 +166,10 @@ class Util {
                     width: 40,
                     height: 40,
                     decoration: BoxDecoration(
-                      color: Colors.amber[100],
+                      color: Colors.orange.shade100,
                       shape: BoxShape.circle,
                     ),
+                    child: const Icon(Icons.warning, color: Colors.orange),
                   ),
                 ),
                 const SizedBox(height: 20),

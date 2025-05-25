@@ -6,7 +6,6 @@ import 'package:envolet_frontend/Screens/SettingsPage.dart';
 import 'package:envolet_frontend/Screens/TransactionPage.dart';
 import 'package:envolet_frontend/Screens/AssetsPage.dart';
 import 'package:envolet_frontend/Screens/TrackerPage.dart';
-import 'package:envolet_frontend/Util/globals.dart'; // <--- unutma!
 
 enum Pages {
   SettingsPage,
@@ -23,13 +22,9 @@ class BottomNavBarWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final navColors = {
-      "backgroundColor": isDarkMode
-          ? Colors.black.withOpacity(0.6)
-          : Colors.white.withOpacity(0.2),
-      "borderColor": isDarkMode
-          ? Colors.white.withOpacity(0.1)
-          : Colors.white.withOpacity(0.3),
-      "iconColor": isDarkMode ? Colors.white70 : Colors.black,
+      "backgroundColor": Colors.white.withOpacity(0.2),
+      "borderColor": Colors.white.withOpacity(0.3),
+      "iconColor": Colors.black,
       "activeColor": Colors.blue,
     };
 

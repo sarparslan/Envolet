@@ -83,21 +83,17 @@ class _TransactionPageState extends State<TransactionPage> {
     );
   }
 
-  void _deleteTransaction(Map<String, dynamic> transaction) {
-    print("Deleting: ${transaction["id"]}");
-    /*
-    Api.deleteTransaction(transaction['id']).then((success) {
-      if (success) {
-        Util.showSuccessAlert(context, "Transaction deleted successfully!");
-        setState(() {
-          transactions.removeWhere((item) => item["id"] == transaction["id"]);
-        });
-      } else {
-        Util.showErrorAlert(context, "Failed to delete transaction.");
-      }
-    });
-    */
-    Util.showSuccessAlert(context, "Transaction deleted successfully!");
+  void _deleteTransaction(Map<String, dynamic> transaction) async {
+    final success = await Api.deleteTransaction(id: transaction['_id']);
+    if (success) {
+      Util.showSuccessAlert(context, "Transaction deleted successfully!");
+      setState(() {
+        transactions.removeWhere((item) => item["_id"] == transaction["_id"]);
+      });
+    } else {
+      Util.errorAlertAndNavigate(
+          context, "Failed to delete transaction.", "Error");
+    }
   }
 
   void _showActionSheet(
@@ -153,7 +149,8 @@ class _TransactionPageState extends State<TransactionPage> {
             builder: (context, setState) {
               amountController.addListener(() {
                 final amountText = amountController.text.trim();
-                final parsed = double.tryParse(amountText);
+                final formattedText = amountText.replaceAll(',', '');
+                final parsed = double.tryParse(formattedText);
                 final enable = parsed != null && parsed > 0;
                 if (enable != isButtonEnabled) {
                   setState(() => isButtonEnabled = enable);
@@ -169,15 +166,13 @@ class _TransactionPageState extends State<TransactionPage> {
                   const SizedBox(height: 16),
                   TextField(
                     controller: amountController,
-                    keyboardType:
-                        const TextInputType.numberWithOptions(decimal: true),
+                    keyboardType: TextInputType.number,
                     decoration: const InputDecoration(
                       labelText: 'Amount',
                       border: OutlineInputBorder(),
                     ),
                     inputFormatters: [
-                      FilteringTextInputFormatter.allow(
-                          RegExp(r'^\d*\.?\d{0,2}')),
+                      FilteringTextInputFormatter.digitsOnly,
                     ],
                   ),
                   const SizedBox(height: 16),
@@ -246,10 +241,8 @@ class _TransactionPageState extends State<TransactionPage> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            DateFormat('dd MMM, yyyy').format(selectedDate),
-                            style: const TextStyle(fontSize: 16),
-                          ),
+                          Text(DateFormat('dd MMM, yyyy').format(selectedDate),
+                              style: const TextStyle(fontSize: 16)),
                           const Icon(Icons.calendar_today, size: 18),
                         ],
                       ),
@@ -270,11 +263,10 @@ class _TransactionPageState extends State<TransactionPage> {
                       ),
                       onPressed: isButtonEnabled
                           ? () async {
-                              final parsed = double.tryParse(
-                                amountController.text
-                                    .trim()
-                                    .replaceAll(',', '.'),
-                              );
+                              final parsed = double.tryParse(amountController
+                                  .text
+                                  .trim()
+                                  .replaceAll(',', ''));
                               if (parsed == null) return;
 
                               final success = await Api.addTransaction(
@@ -292,15 +284,12 @@ class _TransactionPageState extends State<TransactionPage> {
                                   amount: parsed,
                                   date: selectedDate,
                                 );
-
                                 fetchTransactions();
                               }
                             }
                           : null,
-                      child: const Text(
-                        "Add",
-                        style: TextStyle(fontSize: 16, color: Colors.white),
-                      ),
+                      child: const Text("Add",
+                          style: TextStyle(fontSize: 16, color: Colors.white)),
                     ),
                   ),
                 ],
@@ -314,7 +303,7 @@ class _TransactionPageState extends State<TransactionPage> {
 
   void _openEditTransactionDialog(Map<String, dynamic> transaction) {
     final TextEditingController amountController = TextEditingController(
-        text: (transaction['amount'] as num?)?.toStringAsFixed(2) ?? '');
+        text: (transaction['amount'] as num?)?.toString() ?? '');
     String selectedCategory = transaction['category'] ?? categories.first;
     DateTime selectedDate =
         DateTime.tryParse(transaction['date']) ?? DateTime.now();
@@ -350,15 +339,14 @@ class _TransactionPageState extends State<TransactionPage> {
                   const SizedBox(height: 16),
                   TextField(
                     controller: amountController,
-                    keyboardType:
-                        const TextInputType.numberWithOptions(decimal: true),
+                    keyboardType: TextInputType.number, // Same as New Expense
                     decoration: const InputDecoration(
                       labelText: 'Amount',
                       border: OutlineInputBorder(),
                     ),
                     inputFormatters: [
-                      FilteringTextInputFormatter.allow(
-                          RegExp(r'^\d*\.?\d{0,2}')),
+                      FilteringTextInputFormatter
+                          .digitsOnly, // Ensures only digits are allowed
                     ],
                   ),
                   const SizedBox(height: 16),
@@ -427,10 +415,8 @@ class _TransactionPageState extends State<TransactionPage> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            DateFormat('dd MMM, yyyy').format(selectedDate),
-                            style: const TextStyle(fontSize: 16),
-                          ),
+                          Text(DateFormat('dd MMM, yyyy').format(selectedDate),
+                              style: const TextStyle(fontSize: 16)),
                           const Icon(Icons.calendar_today, size: 18),
                         ],
                       ),
@@ -451,14 +437,14 @@ class _TransactionPageState extends State<TransactionPage> {
                       ),
                       onPressed: isButtonEnabled
                           ? () async {
-                              final parsed = double.tryParse(
-                                amountController.text
-                                    .trim()
-                                    .replaceAll(',', '.'),
-                              );
+                              final parsed = double.tryParse(amountController
+                                  .text
+                                  .trim()
+                                  .replaceAll(',', ''));
                               if (parsed == null) return;
-/*
-                              final success = await Api.addTransaction(
+
+                              final success = await Api.updateTransaction(
+                                id: transaction["_id"],
                                 amount: parsed,
                                 category: selectedCategory,
                                 date: DateFormat('yyyy-MM-dd')
@@ -467,31 +453,21 @@ class _TransactionPageState extends State<TransactionPage> {
 
                               if (success) {
                                 Navigator.of(context).pop();
-                                Util.showTransactionSuccessBottomSheet(
+                                Util.showTransactionUpdateSuccessBottomSheet(
                                   context,
                                   category: selectedCategory,
                                   amount: parsed,
                                   date: selectedDate,
                                 );
-
                                 fetchTransactions();
+                              } else {
+                                Util.errorAlertAndNavigate(context,
+                                    "Failed to update transaction.", "Error");
                               }
-                              */
-                              Navigator.of(context).pop();
-                              Util.showTransactionUpdateSuccessBottomSheet(
-                                context,
-                                category: selectedCategory,
-                                amount: parsed,
-                                date: selectedDate,
-                              );
-
-                              fetchTransactions();
                             }
                           : null,
-                      child: const Text(
-                        "Update",
-                        style: TextStyle(fontSize: 16, color: Colors.white),
-                      ),
+                      child: const Text("Update",
+                          style: TextStyle(fontSize: 16, color: Colors.white)),
                     ),
                   ),
                 ],
@@ -501,14 +477,6 @@ class _TransactionPageState extends State<TransactionPage> {
         ),
       ),
     );
-  }
-
-  void _onEditTransaction(Map<String, dynamic> transaction) {
-    print("Edit tapped: ${transaction["id"]}");
-  }
-
-  void _onDeleteTransaction(Map<String, dynamic> transaction) {
-    print("Delete tapped: ${transaction["id"]}");
   }
 
   @override
@@ -589,7 +557,7 @@ class _TransactionPageState extends State<TransactionPage> {
                             mainAxisAlignment: MainAxisAlignment.end,
                             children: [
                               Text(
-                                (tx["amount"] ?? 0).toStringAsFixed(2),
+                                (tx["amount"] ?? 0).toString(),
                                 style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w600,

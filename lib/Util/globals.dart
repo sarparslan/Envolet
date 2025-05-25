@@ -10,7 +10,6 @@ import 'package:flutter/material.dart';
 bool _isDarkMode = false;
 
 String globalDiffLevel = 'Def';
-bool get isDarkMode => _isDarkMode;
 
 set isDarkMode(bool value) {
   _isDarkMode = value;
@@ -48,7 +47,6 @@ final Map<String, IconData> currencyIcons = {
   "JPY": FontAwesomeIcons.yenSign,
   "TL": FontAwesomeIcons.turkishLiraSign,
   "CHF": FontAwesomeIcons.francSign,
-  "SEK": FontAwesomeIcons.k,
 };
 
 String get globalCurrency => _globalCurrency;

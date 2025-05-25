@@ -1,13 +1,9 @@
-import 'package:envolet_frontend/Auth/login.dart';
 import 'package:envolet_frontend/Services/api.dart';
-import 'package:envolet_frontend/Util/Helper/helper.dart';
 import 'package:envolet_frontend/Util/alart.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:envolet_frontend/Widgets/bottomBarWidget.dart';
 import 'package:envolet_frontend/Util/globals.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -41,9 +37,8 @@ class _SettingsPageState extends State<SettingsPage> {
     "EUR",
     "GBP",
     "JPY",
-    "TL"
-        "CHF",
-    "SEK",
+    "TL",
+    "CHF",
   ];
 
   String selectedCurrency = globalCurrency;
@@ -74,8 +69,8 @@ class _SettingsPageState extends State<SettingsPage> {
   void _showInfoDialog(String title) {
     String content;
     final colorSet = {
-      "textColor": isDarkMode ? Colors.white : Colors.black,
-      "backgroundColor": isDarkMode ? Color(0xFF1E1E1E) : Colors.white,
+      "textColor": Colors.black,
+      "backgroundColor": Colors.white,
     };
 
     switch (title) {
@@ -125,9 +120,8 @@ class _SettingsPageState extends State<SettingsPage> {
     final height = MediaQuery.of(context).size.height;
     final width = MediaQuery.of(context).size.width;
 
-    final bgColor =
-        isDarkMode ? const Color.fromARGB(26, 15, 13, 13) : Colors.white;
-    final dividerColor = isDarkMode ? Colors.white : Colors.grey.shade300;
+    final bgColor = Colors.white;
+    final dividerColor = Colors.grey.shade300;
     return Scaffold(
       appBar: AppBar(
         title: Text("Settings", style: TextStyle(color: Colors.black)),
@@ -200,10 +194,8 @@ class _SettingsPageState extends State<SettingsPage> {
 
   Widget logOut() {
     return ListTile(
-      leading:
-          Icon(Icons.logout, color: isDarkMode ? Colors.white : Colors.black),
-      title: Text("Log Out",
-          style: TextStyle(color: isDarkMode ? Colors.white : Colors.black)),
+      leading: Icon(Icons.logout, color: Colors.black),
+      title: Text("Log Out", style: TextStyle(color: Colors.black)),
       onTap: () => Util.showLogoutDialog(context),
     );
   }
@@ -253,35 +245,6 @@ class _SettingsTileNoArrow extends StatelessWidget {
           style: TextStyle(fontSize: height * 0.02, color: textColor)),
       trailing: Text(value,
           style: TextStyle(fontSize: height * 0.02, color: textColor)),
-    );
-  }
-}
-
-class _SettingsSwitchTile extends StatelessWidget {
-  final String title;
-  final bool value;
-  final Function(bool) onChanged;
-  final Color textColor;
-
-  const _SettingsSwitchTile(
-      {required this.title,
-      required this.value,
-      required this.onChanged,
-      required this.textColor});
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      title: Text(title, style: TextStyle(fontSize: 16, color: textColor)),
-      trailing: Switch(
-        value: value,
-        onChanged: onChanged,
-        activeColor: Colors.white,
-        activeTrackColor: Colors.blue,
-        inactiveThumbColor: Colors.white,
-        inactiveTrackColor: Colors.grey,
-      ),
     );
   }
 }
