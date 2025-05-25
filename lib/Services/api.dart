@@ -124,66 +124,7 @@ class Api {
       return false;
     }
   }
-  // ------------------ Budgets ------------------
 
-  static Future<bool> addBudget({
-    required String category,
-    required double amount,
-    required String startDate,
-    required String endDate,
-  }) async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString("token");
-    if (token == null) return false;
-
-    final header = {
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer $token',
-    };
-
-    final body = {
-      "category": category,
-      "amount": amount,
-      "startDate": startDate,
-      "endDate": endDate,
-    };
-
-    final response = await http.post(
-      Uri.parse("$baseUrl/budgets"),
-      headers: header,
-      body: jsonEncode(body),
-    );
-
-    if (response.statusCode == 201 || response.statusCode == 200) {
-      print("Budget created");
-      return true;
-    } else {
-      print("AddBudget failed: ${response.body}");
-      return false;
-    }
-  }
-
-  static Future<List<Map<String, dynamic>>> getBudgets() async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString("token");
-    if (token == null) return [];
-
-    final header = {
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer $token',
-    };
-
-    final response =
-        await http.get(Uri.parse("$baseUrl/budgets"), headers: header);
-
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body)['data'];
-      return List<Map<String, dynamic>>.from(data);
-    } else {
-      print("GetBudgets failed: ${response.body}");
-      return [];
-    }
-  }
 // ------------------ Transactions ------------------
 
   // Add Transaction
@@ -307,5 +248,123 @@ class Api {
       print("DeleteTransaction failed: ${response.body}");
       return false;
     }
+  }
+
+  // ------------------ Assets ------------------
+
+  // Get all assets
+  static Future<List<Map<String, dynamic>>> getAssets() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString("token");
+    if (token == null) return [];
+
+    final header = {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer $token',
+    };
+
+    final response = await http.get(
+      Uri.parse("$baseUrl/assets"),
+      headers: header,
+    );
+
+    if (response.statusCode == 200) {
+      return List<Map<String, dynamic>>.from(jsonDecode(response.body)['data']);
+    } else {
+      print("getAssets failed: ${response.body}");
+      return [];
+    }
+  }
+
+// Add asset
+  static Future<Map<String, dynamic>?> addAsset({
+    required String bankName,
+    required int amount,
+    required String lastFourDigits,
+    required String brand,
+    required String color,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString("token");
+    if (token == null) return null;
+
+    final header = {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer $token',
+    };
+
+    final body = {
+      "bankName": bankName,
+      "amount": amount,
+      "lastFourDigits": lastFourDigits,
+      "brand": brand,
+      "color": color,
+    };
+
+    final response = await http.post(
+      Uri.parse("$baseUrl/assets"),
+      headers: header,
+      body: jsonEncode(body),
+    );
+
+    if (response.statusCode == 201 || response.statusCode == 200) {
+      return jsonDecode(response.body)['data'];
+    } else {
+      print("addAsset failed: ${response.body}");
+      return null;
+    }
+  }
+
+// Delete asset
+  static Future<bool> deleteAsset(String id) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString("token");
+    if (token == null) return false;
+
+    final header = {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer $token',
+    };
+
+    final response = await http.delete(
+      Uri.parse("$baseUrl/assets/$id"),
+      headers: header,
+    );
+
+    return response.statusCode == 200;
+  }
+
+  static Future<bool> updateAsset({
+    required String id,
+    required String bankName,
+    required int amount,
+    required String lastFourDigits,
+    required String brand,
+    required String color,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString("token");
+    if (token == null) return false;
+
+    final header = {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer $token',
+    };
+
+    final body = {
+      "bankName": bankName,
+      "amount": amount,
+      "lastFourDigits": lastFourDigits,
+      "brand": brand,
+      "color": color,
+    };
+
+    final response = await http.put(
+      Uri.parse("$baseUrl/assets/$id"),
+      headers: header,
+      body: jsonEncode(body),
+    );
+
+    return response.statusCode == 200;
   }
 }

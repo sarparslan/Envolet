@@ -1,17 +1,17 @@
 import 'dart:ui';
 import 'dart:io';
+import 'package:envolet_frontend/Screens/HomePage.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:envolet_frontend/Screens/SettingsPage.dart';
 import 'package:envolet_frontend/Screens/TransactionPage.dart';
-import 'package:envolet_frontend/Screens/AssetsPage.dart';
 import 'package:envolet_frontend/Screens/TrackerPage.dart';
 
 enum Pages {
   SettingsPage,
   TransactionPage,
   TrackerPage,
-  AssetsPage,
+  HomePage,
 }
 
 class BottomNavBarWidget extends StatelessWidget {
@@ -50,7 +50,7 @@ class BottomNavBarWidget extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _buildNavItem(Icons.wallet, "Assets", Pages.AssetsPage, iconSize,
+              _buildNavItem(Icons.home, "Home", Pages.HomePage, iconSize,
                   context, navColors),
               _buildNavItem(Icons.bar_chart, "Insights", Pages.TrackerPage,
                   iconSize, context, navColors),
@@ -74,8 +74,8 @@ class BottomNavBarWidget extends StatelessWidget {
           Navigator.of(context).push(PageRouteBuilder(
             pageBuilder: (_, __, ___) {
               switch (page) {
-                case Pages.AssetsPage:
-                  return AssetsPage();
+                case Pages.HomePage:
+                  return HomePage();
                 case Pages.TrackerPage:
                   return TrackerPage();
 

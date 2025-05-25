@@ -1,5 +1,5 @@
 import 'package:envolet_frontend/Auth/register.dart';
-import 'package:envolet_frontend/Screens/AssetsPage.dart';
+import 'package:envolet_frontend/Screens/HomePage.dart';
 import 'package:envolet_frontend/Services/api.dart';
 import 'package:envolet_frontend/Util/Helper/helper.dart';
 import 'package:envolet_frontend/Util/alart.dart';
@@ -45,7 +45,7 @@ class _LoginPageState extends State<LoginPage> {
               Expanded(
                 child: Center(
                   child: Image.asset(
-                    'images/loginOnboarding.png',
+                    'images/loginOnboardingView.png',
                     height: height / 2,
                   ),
                 ),
@@ -53,16 +53,16 @@ class _LoginPageState extends State<LoginPage> {
               Text(
                 'Welcome Back!',
                 style: TextStyle(
-                  fontSize: height / 30,
+                  fontSize: height / 40,
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              SizedBox(height: height / 60),
+              SizedBox(height: height / 70),
               Text(
                 'Please login to your account',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: height / 45,
+                  fontSize: height / 50,
                   color: Colors.grey,
                 ),
               ),
@@ -152,7 +152,7 @@ class _LoginPageState extends State<LoginPage> {
             print("✅ Login successful. Token: ${result.token}");
 
             clearLoginControllers();
-            Util.navigateWithFade(context, AssetsPage());
+            Util.navigateWithFade(context, HomePage());
           } else {
             print("❌ Login failed for email: $email");
             Util.errorAlertAndNavigate(

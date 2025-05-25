@@ -20,6 +20,32 @@ class Util {
     });
   }
 
+  static void showSuccessAlertForCardUpdateaAdDelete(
+    BuildContext context,
+    String message, {
+    required VoidCallback onContinue,
+  }) async {
+    await QuickAlert.show(
+      context: context,
+      type: QuickAlertType.success,
+      text: message,
+      confirmBtnText: "Continue",
+      confirmBtnColor: const Color(0xFF2D6BFF),
+      backgroundColor: Colors.white,
+      titleColor: Colors.black,
+      textColor: Colors.black54,
+      confirmBtnTextStyle: const TextStyle(
+        fontWeight: FontWeight.w600,
+        color: Colors.white,
+        fontSize: 16,
+      ),
+      onConfirmBtnTap: () {
+        Navigator.of(context).pop();
+      },
+    );
+    Future.delayed(Duration(milliseconds: 100), onContinue);
+  }
+
   static void successAlertAndGoToPage(
     BuildContext context,
     String title,

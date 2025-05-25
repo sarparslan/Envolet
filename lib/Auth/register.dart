@@ -1,5 +1,5 @@
 import 'package:envolet_frontend/Auth/login.dart';
-import 'package:envolet_frontend/Screens/AssetsPage.dart';
+import 'package:envolet_frontend/Screens/HomePage.dart';
 import 'package:envolet_frontend/Services/api.dart';
 import 'package:envolet_frontend/Util/alart.dart';
 import 'package:envolet_frontend/Util/Helper/helper.dart';
@@ -85,7 +85,7 @@ class _RegisterPageState extends State<RegisterPage> {
                 height: height / 3.1,
                 child: Center(
                   child: Image.asset(
-                    'images/registerOnboarding.png',
+                    'images/registerOnboardingView.png',
                     fit: BoxFit.contain,
                   ),
                 ),
@@ -93,16 +93,16 @@ class _RegisterPageState extends State<RegisterPage> {
               Text(
                 'Create an Account',
                 style: TextStyle(
-                  fontSize: height / 35,
+                  fontSize: height / 40,
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              SizedBox(height: height / 60),
+              SizedBox(height: height / 65),
               Text(
                 'Please fill in the details below to create a new account.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: height / 50,
+                  fontSize: height / 55,
                   color: Colors.grey,
                 ),
               ),
@@ -261,7 +261,7 @@ class _RegisterPageState extends State<RegisterPage> {
                   Util.successAlertAndGoToPage(
                     context,
                     "Your account has been created successfully!",
-                    AssetsPage(),
+                    HomePage(),
                   );
                 } else {
                   Util.errorAlertAndNavigate(

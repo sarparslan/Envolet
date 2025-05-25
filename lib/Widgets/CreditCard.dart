@@ -1,3 +1,4 @@
+import 'package:envolet_frontend/Util/globals.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:intl/intl.dart'; // NumberFormat için
@@ -51,41 +52,15 @@ class CustomCreditCard extends StatelessWidget {
     }
   }
 
-  // Get currency symbol based on currency code
-  String _getCurrencySymbol(String currency) {
-    switch (currency) {
-      case "USD":
-        return "\$";
-      case "EUR":
-        return "€";
-      case "GBP":
-        return "£";
-      case "JPY":
-        return "¥";
-      case "AUD":
-        return "A\$";
-      case "CAD":
-        return "C\$";
-      case "CHF":
-        return "CHF";
-      case "CNY":
-        return "¥";
-      case "SEK":
-        return "kr";
-      case "TL":
-        return "₺";
-      default:
-        return "";
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final backgroundColor =
         (colorHex != null) ? _hexToColor(colorHex!) : Colors.black87;
     final icon = _getCardIcon(cardBrand);
-    final currencySymbol =
-        (currency != null) ? _getCurrencySymbol(currency!) : "\$";
+
+    // Değiştir: currencySymbol artık String olsun
+    final String currencySymbolString = currencySymbolMap[globalCurrency] ??
+        ''; // bu map global'de tanımlı olmalı
 
     // Format the balance with thousand separators
     String formattedBalance = balance;
@@ -135,7 +110,7 @@ class CustomCreditCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                '$currencySymbol$formattedBalance',
+                '$currencySymbolString$formattedBalance',
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 24,

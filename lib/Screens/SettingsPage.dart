@@ -13,9 +13,6 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
-  String? userEmail;
-  String? userName;
-
   @override
   void initState() {
     super.initState();
@@ -27,7 +24,8 @@ class _SettingsPageState extends State<SettingsPage> {
     if (user != null && mounted) {
       setState(() {
         userEmail = user['email'];
-        userName = user['name'] + " " + user['surname'];
+        userName = user['name'];
+        userSurname = user['surname'];
       });
     }
   }
@@ -139,7 +137,8 @@ class _SettingsPageState extends State<SettingsPage> {
             _SectionHeader("Account Info", Colors.black),
             _SettingsTileNoArrow(
                 title: "Name",
-                value: userName ?? "loading...",
+                value: (userName.toString() + " " + userSurname.toString()) ??
+                    "loading...",
                 textColor: Colors.black),
             _SettingsTileNoArrow(
                 title: "Email",

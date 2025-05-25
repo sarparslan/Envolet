@@ -1,3 +1,7 @@
+import 'package:envolet_frontend/Services/api.dart';
+import 'package:envolet_frontend/Util/alart.dart';
+import 'package:envolet_frontend/Util/globals.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:envolet_frontend/Util/Helper/ThousandsFormatter.dart';
@@ -19,31 +23,17 @@ class _CardAdditionDialogState extends State<CardAdditionDialog> {
   late String _cardTail;
   String _selectedCardBrand = "";
   late Color _cardColor;
-  late String _selectedCurrency;
-
-  final List<String> _currencyOptions = [
-    "USD",
-    "EUR",
-    "GBP",
-    "JPY",
-    "AUD",
-    "CAD",
-    "CHF",
-    "CNY",
-    "SEK",
-    "TL"
-  ];
 
   // 5 popular card brands + an empty one for "None"
   final List<String> _cardBrandOptions = [
-    '',
     'Visa',
     'MasterCard',
     'American Express',
     'Discover',
     'Amazon Pay',
     'Apple Pay',
-    'Paypal'
+    'Paypal',
+    'Other',
   ];
 
   // Predefined color options
@@ -89,7 +79,6 @@ class _CardAdditionDialogState extends State<CardAdditionDialog> {
     _amount = (widget.initialData?['balance'] ?? '').replaceAll(',', '');
     _cardTail = widget.initialData?['cardTail'] ?? '';
     _selectedCardBrand = widget.initialData?['cardBrand'] ?? '';
-    _selectedCurrency = widget.initialData?['currency'] ?? _currencyOptions[0];
 
     if (widget.initialData != null &&
         widget.initialData!.containsKey('color')) {
@@ -116,28 +105,45 @@ class _CardAdditionDialogState extends State<CardAdditionDialog> {
   String _colorToHex(Color color) =>
       '#${color.value.toRadixString(16).substring(2).toUpperCase()}';
 
-  void _saveCard() {
+  void _saveCard() async {
     if (_formKey.currentState?.validate() ?? false) {
       _formKey.currentState?.save();
-      // Remove commas for storage
-      final String plainAmount = _amount.replaceAll(',', '');
-      final String cardNumber = widget.initialData != null
-          ? widget.initialData!['cardNumber']!
-          : DateTime.now().millisecondsSinceEpoch.toString();
 
-      String colorHex = _colorToHex(_cardColor);
+      final plainAmount = _amount.replaceAll(',', '');
+      final int amountInt = int.tryParse(plainAmount) ?? 0;
+      final String colorHex = _colorToHex(_cardColor);
 
-      Map<String, String> cardData = {
-        'cardNumber': cardNumber,
-        'bankName': _bankName,
-        'balance': plainAmount,
-        'currency': _selectedCurrency,
-        'color': colorHex,
-        'cardTail': _cardTail,
-        'cardBrand': _selectedCardBrand,
-      };
+      final bool isUpdate = widget.initialData?['_id'] != null;
 
-      Navigator.pop(context, cardData);
+      if (isUpdate) {
+        final success = await Api.updateAsset(
+          id: widget.initialData!['_id']!,
+          bankName: _bankName,
+          amount: amountInt,
+          lastFourDigits: _cardTail,
+          brand: _selectedCardBrand,
+          color: colorHex,
+        );
+
+        if (success) {
+          Util.showSuccessAlertForCardUpdateaAdDelete(
+            context,
+            "Your card was successfully updated.",
+            onContinue: () {
+              Navigator.of(context).pop({'updated': 'true'});
+            },
+          );
+        }
+      } else {
+        Map<String, String> cardData = {
+          'bankName': _bankName,
+          'balance': plainAmount,
+          'color': colorHex,
+          'cardTail': _cardTail,
+          'cardBrand': _selectedCardBrand,
+        };
+        Navigator.pop(context, cardData);
+      }
     }
   }
 
@@ -145,51 +151,37 @@ class _CardAdditionDialogState extends State<CardAdditionDialog> {
     bool confirm = await showDialog<bool>(
           context: context,
           builder: (context) {
-            return Theme(
-              data: Theme.of(context).copyWith(
-                colorScheme: ColorScheme.fromSwatch().copyWith(
-                  primary: Colors.blue,
-                  secondary: Colors.blue,
+            return AlertDialog(
+              backgroundColor: Colors.white,
+              title:
+                  Text("Confirmation", style: TextStyle(color: Colors.black)),
+              content: Text(
+                "Are you sure you want to delete this card?",
+                style: TextStyle(color: Colors.black),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: Text("No", style: TextStyle(color: Colors.black)),
                 ),
-                textButtonTheme: TextButtonThemeData(
+                TextButton(
                   style: TextButton.styleFrom(
-                    backgroundColor: Colors.white,
-                  ).copyWith(
-                    overlayColor: MaterialStateProperty.all(
-                      Colors.blue.withOpacity(0.2),
+                    backgroundColor: Colors.red,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
                     ),
                   ),
+                  onPressed: () => Navigator.pop(context, true),
+                  child: Text("Yes", style: TextStyle(color: Colors.white)),
                 ),
-              ),
-              child: AlertDialog(
-                backgroundColor: Colors.white,
-                title:
-                    Text("Confirmation", style: TextStyle(color: Colors.black)),
-                content: Text(
-                  "Are you sure you want to delete this card?",
-                  style: TextStyle(color: Colors.black),
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context, false),
-                    child: Text("No", style: TextStyle(color: Colors.black)),
-                  ),
-                  TextButton(
-                    onPressed: () => Navigator.pop(context, true),
-                    child: Text("Yes", style: TextStyle(color: Colors.red)),
-                  ),
-                ],
-              ),
+              ],
             );
           },
         ) ??
         false;
 
     if (confirm) {
-      Navigator.pop(context, {
-        'delete': 'true',
-        'cardNumber': widget.initialData!['cardNumber']!,
-      });
+      Navigator.of(context).pop({'delete': 'true'});
     }
   }
 
@@ -213,7 +205,7 @@ class _CardAdditionDialogState extends State<CardAdditionDialog> {
       child: AlertDialog(
         backgroundColor: Colors.white,
         title: Text(
-          widget.initialData != null ? 'Edit Card' : 'Add Card',
+          widget.initialData != null ? 'Update Asset' : 'Add Card',
           style: TextStyle(color: Colors.black),
         ),
         content: SingleChildScrollView(
@@ -232,8 +224,10 @@ class _CardAdditionDialogState extends State<CardAdditionDialog> {
                 ),
                 SizedBox(height: 8),
                 // Amount
+                // Amount
                 _buildTextField(
-                  label: 'Amount',
+                  label:
+                      'Amount (${globalCurrency ?? ''})', // burada currency yazıyor
                   initialValue: _amount,
                   onSaved: (val) => _amount = val!,
                   validator: (val) {
@@ -253,10 +247,9 @@ class _CardAdditionDialogState extends State<CardAdditionDialog> {
                   keyboardType: TextInputType.number,
                   inputFormatters: [ThousandsFormatter()],
                 ),
+
                 SizedBox(height: 8),
-                // Currency
-                _buildCurrencyDropdown(),
-                SizedBox(height: 8),
+
                 // Last 4 Digits
                 _buildTextField(
                   label: 'Last 4 Digits',
@@ -276,12 +269,12 @@ class _CardAdditionDialogState extends State<CardAdditionDialog> {
                   },
                   keyboardType: TextInputType.number,
                 ),
+
                 SizedBox(height: 8),
                 // Card Brand
-                _buildCardBrandDropdown(),
+                _buildCardBrandCupertinoPicker(),
                 SizedBox(height: 8),
-                // Card Color
-                _buildCardColorDropdown(),
+                _buildCardColorCupertinoPicker(),
               ],
             ),
           ),
@@ -291,25 +284,19 @@ class _CardAdditionDialogState extends State<CardAdditionDialog> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // Cancel
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text('Cancel', style: TextStyle(color: Colors.black)),
-              ),
-              // Delete Card
+              SizedBox(width: 10),
+
+              // Delete (only if editing)
               if (widget.initialData != null)
-                TextButton(
+                ElevatedButton(
                   onPressed: _deleteCard,
-                  style: TextButton.styleFrom(
-                    backgroundColor: Colors.white,
-                  ).copyWith(
-                    overlayColor: MaterialStateProperty.all(
-                      Colors.blue.withOpacity(0.2),
-                    ),
-                  ),
-                  child:
-                      Text('Delete Card', style: TextStyle(color: Colors.red)),
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                  child: Text('Delete Card',
+                      style: TextStyle(color: Colors.white)),
                 ),
+
+              SizedBox(width: 10),
+
               // Save
               ElevatedButton(
                 onPressed: _saveCard,
@@ -317,7 +304,7 @@ class _CardAdditionDialogState extends State<CardAdditionDialog> {
                 child: Text('Save', style: TextStyle(color: Colors.white)),
               ),
             ],
-          )
+          ),
         ],
       ),
     );
@@ -331,149 +318,148 @@ class _CardAdditionDialogState extends State<CardAdditionDialog> {
     TextInputType? keyboardType,
     List<TextInputFormatter>? inputFormatters,
   }) {
-    return TextFormField(
-      initialValue: initialValue,
-      onSaved: onSaved,
-      validator: validator,
-      keyboardType: keyboardType,
-      inputFormatters: inputFormatters,
-      decoration: InputDecoration(
-        labelText: label,
-        labelStyle: TextStyle(color: Colors.blue),
-        filled: true,
-        fillColor: Colors.white,
-        enabledBorder: OutlineInputBorder(
-          borderSide: BorderSide(color: Colors.blue, width: 1),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderSide: BorderSide(color: Colors.blue, width: 2),
-        ),
-        contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-      ),
-      style: TextStyle(color: Colors.black),
-    );
-  }
+    final focusNode = FocusNode();
+    return StatefulBuilder(
+      builder: (context, setState) {
+        focusNode.addListener(() {
+          setState(() {});
+        });
 
-  /// Currency Dropdown
-  Widget _buildCurrencyDropdown() {
-    return Row(
-      children: [
-        Text('Currency:', style: TextStyle(color: Colors.blue)),
-        SizedBox(width: 10),
-        Expanded(
-          child: DropdownButtonFormField<String>(
-            value: _selectedCurrency,
-            style: TextStyle(color: Colors.black),
-            decoration: InputDecoration(
-              filled: true,
-              fillColor: Colors.white,
-              enabledBorder: OutlineInputBorder(
-                borderSide: BorderSide(color: Colors.blue, width: 1),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderSide: BorderSide(color: Colors.blue, width: 2),
-              ),
-              contentPadding: EdgeInsets.symmetric(horizontal: 8),
+        return TextFormField(
+          focusNode: focusNode,
+          initialValue: initialValue,
+          onSaved: onSaved,
+          validator: validator,
+          keyboardType: keyboardType,
+          inputFormatters: inputFormatters,
+          decoration: InputDecoration(
+            labelText: label,
+            labelStyle: TextStyle(
+              color: focusNode.hasFocus ? Colors.blue : Colors.grey,
             ),
-            dropdownColor: Colors.white,
-            items: _currencyOptions.map((currency) {
-              return DropdownMenuItem<String>(
-                value: currency,
-                child: Text(currency, style: TextStyle(color: Colors.black)),
-              );
-            }).toList(),
-            onChanged: (val) {
-              if (val != null) setState(() => _selectedCurrency = val);
-            },
+            enabledBorder: OutlineInputBorder(
+              borderSide: BorderSide(
+                color: Colors.grey,
+                width: 1,
+              ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderSide: BorderSide(
+                color: Colors.blue,
+                width: 2,
+              ),
+            ),
+            filled: true,
+            fillColor: Colors.white,
+            contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 12),
           ),
-        ),
-      ],
+          style: TextStyle(color: Colors.black),
+        );
+      },
     );
   }
 
-  /// Card Brand Dropdown
-  Widget _buildCardBrandDropdown() {
-    return Row(
-      children: [
-        Text('Card Brand:', style: TextStyle(color: Colors.blue)),
-        SizedBox(width: 10),
-        Expanded(
-          child: DropdownButtonFormField<String>(
-            value: _selectedCardBrand.isNotEmpty ? _selectedCardBrand : null,
-            style: TextStyle(color: Colors.black),
-            decoration: InputDecoration(
-              filled: true,
-              fillColor: Colors.white,
-              enabledBorder: OutlineInputBorder(
-                borderSide: BorderSide(color: Colors.blue, width: 1),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderSide: BorderSide(color: Colors.blue, width: 2),
-              ),
-              contentPadding: EdgeInsets.symmetric(horizontal: 8),
-            ),
-            dropdownColor: Colors.white,
-            hint: Text("Select Card Brand",
-                style: TextStyle(color: Colors.black)),
-            items: _cardBrandOptions.map((brand) {
-              return DropdownMenuItem<String>(
-                value: brand,
-                child: Text(brand.isEmpty ? "None" : brand,
-                    style: TextStyle(color: Colors.black)),
-              );
-            }).toList(),
-            onChanged: (val) {
-              setState(() => _selectedCardBrand = val ?? "");
-            },
-          ),
-        ),
-      ],
-    );
-  }
-
-  /// Card Color Dropdown
-  Widget _buildCardColorDropdown() {
-    return Row(
-      children: [
-        Text('Card Color:', style: TextStyle(color: Colors.blue)),
-        SizedBox(width: 10),
-        Expanded(
-          child: DropdownButtonFormField<Color>(
-            value: _cardColor,
-            style: TextStyle(color: Colors.black),
-            decoration: InputDecoration(
-              filled: true,
-              fillColor: Colors.white,
-              enabledBorder: OutlineInputBorder(
-                borderSide: BorderSide(color: Colors.blue, width: 1),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderSide: BorderSide(color: Colors.blue, width: 2),
-              ),
-              contentPadding: EdgeInsets.symmetric(horizontal: 8),
-            ),
-            dropdownColor: Colors.white,
-            items: _colorOptions.map((color) {
-              return DropdownMenuItem<Color>(
-                value: color,
-                child: Row(
-                  children: [
-                    Container(width: 20, height: 20, color: color),
-                    SizedBox(width: 8),
-                    Text(_colorLabels[color] ?? '',
-                        style: TextStyle(color: Colors.black)),
-                  ],
+  Widget _buildCardBrandCupertinoPicker() {
+    return GestureDetector(
+      onTap: () {
+        showModalBottomSheet(
+          context: context,
+          builder: (_) {
+            return Container(
+              height: 250,
+              child: CupertinoPicker(
+                backgroundColor: Colors.white,
+                itemExtent: 32.0,
+                scrollController: FixedExtentScrollController(
+                  initialItem: _cardBrandOptions.indexOf(
+                      _selectedCardBrand.isNotEmpty
+                          ? _selectedCardBrand
+                          : _cardBrandOptions[0]),
                 ),
-              );
-            }).toList(),
-            onChanged: (Color? newColor) {
-              if (newColor != null) {
-                setState(() => _cardColor = newColor);
-              }
-            },
+                onSelectedItemChanged: (int index) {
+                  setState(() {
+                    _selectedCardBrand = _cardBrandOptions[index];
+                  });
+                },
+                children: _cardBrandOptions
+                    .map((brand) =>
+                        Text(brand, style: TextStyle(color: Colors.black)))
+                    .toList(),
+              ),
+            );
+          },
+        );
+      },
+      child: AbsorbPointer(
+        child: TextFormField(
+          decoration: InputDecoration(
+            labelText: 'Card Brand',
+            labelStyle: TextStyle(color: Colors.grey),
+            enabledBorder: OutlineInputBorder(
+              borderSide: BorderSide(color: Colors.grey),
+            ),
+            filled: true,
+            fillColor: Colors.white,
           ),
+          controller: TextEditingController(text: _selectedCardBrand),
         ),
-      ],
+      ),
+    );
+  }
+
+  Widget _buildCardColorCupertinoPicker() {
+    return GestureDetector(
+      onTap: () {
+        showModalBottomSheet(
+          context: context,
+          builder: (_) {
+            return Container(
+              height: 250,
+              child: CupertinoPicker(
+                backgroundColor: Colors.white,
+                itemExtent: 32.0,
+                scrollController: FixedExtentScrollController(
+                  initialItem: _colorOptions.indexOf(_cardColor),
+                ),
+                onSelectedItemChanged: (int index) {
+                  setState(() {
+                    _cardColor = _colorOptions[index];
+                  });
+                },
+                children: _colorOptions.map((color) {
+                  return Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        width: 20,
+                        height: 20,
+                        color: color,
+                        margin: EdgeInsets.only(right: 8),
+                      ),
+                      Text(_colorLabels[color] ?? '',
+                          style: TextStyle(color: Colors.black)),
+                    ],
+                  );
+                }).toList(),
+              ),
+            );
+          },
+        );
+      },
+      child: AbsorbPointer(
+        child: TextFormField(
+          decoration: InputDecoration(
+            labelText: 'Card Color',
+            labelStyle: TextStyle(color: Colors.grey),
+            enabledBorder: OutlineInputBorder(
+              borderSide: BorderSide(color: Colors.grey),
+            ),
+            filled: true,
+            fillColor: Colors.white,
+          ),
+          controller: TextEditingController(text: _colorLabels[_cardColor]),
+        ),
+      ),
     );
   }
 }

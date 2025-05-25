@@ -7,24 +7,42 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/material.dart';
 
-bool _isDarkMode = false;
+String? userEmail;
+String? userName;
+String? userSurname;
 
-String globalDiffLevel = 'Def';
+final Map<String, IconData> categoryIcons = {
+  "Food & Drinks": FontAwesomeIcons.utensils,
+  "Transportation": FontAwesomeIcons.bus,
+  "Housing": FontAwesomeIcons.house,
+  "Bills": FontAwesomeIcons.fileInvoiceDollar,
+  "Health": FontAwesomeIcons.heartbeat,
+  "Entertainment": FontAwesomeIcons.film,
+  "Shopping": FontAwesomeIcons.shoppingBag,
+  "Education": FontAwesomeIcons.book,
+  "Travel": FontAwesomeIcons.plane,
+};
 
-set isDarkMode(bool value) {
-  _isDarkMode = value;
-  _saveToPrefs();
-}
+final List<String> categories = [
+  "Food & Drinks",
+  "Transportation",
+  "Housing",
+  "Bills",
+  "Health",
+  "Entertainment",
+  "Shopping",
+  "Education",
+  "Travel",
+];
 
-Future<void> loadDarkModePreference() async {
-  final prefs = await SharedPreferences.getInstance();
-  _isDarkMode = prefs.getBool('isDarkMode') ?? false;
-}
-
-Future<void> _saveToPrefs() async {
-  final prefs = await SharedPreferences.getInstance();
-  prefs.setBool('isDarkMode', _isDarkMode);
-}
+Map<String, String> currencySymbolMap = {
+  'USD': '\$',
+  'EUR': '€',
+  'GBP': '£',
+  'TL': '₺',
+  'JPY': '¥',
+  'CHF': 'CHF',
+};
 
 void pushWithFadeTransition(BuildContext context, Widget destinationPage,
     {int durationMillis = 300}) {

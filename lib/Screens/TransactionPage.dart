@@ -19,30 +19,6 @@ class _TransactionPageState extends State<TransactionPage> {
   List<Map<String, dynamic>> transactions = [];
   bool isLoading = true;
 
-  final Map<String, IconData> categoryIcons = {
-    "Food & Drinks": FontAwesomeIcons.utensils,
-    "Transportation": FontAwesomeIcons.bus,
-    "Housing": FontAwesomeIcons.house,
-    "Bills": FontAwesomeIcons.fileInvoiceDollar,
-    "Health": FontAwesomeIcons.heartbeat,
-    "Entertainment": FontAwesomeIcons.film,
-    "Shopping": FontAwesomeIcons.shoppingBag,
-    "Education": FontAwesomeIcons.book,
-    "Travel": FontAwesomeIcons.plane,
-  };
-
-  final List<String> categories = [
-    "Food & Drinks",
-    "Transportation",
-    "Housing",
-    "Bills",
-    "Health",
-    "Entertainment",
-    "Shopping",
-    "Education",
-    "Travel",
-  ];
-
   @override
   void initState() {
     super.initState();
