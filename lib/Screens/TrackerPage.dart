@@ -1,7 +1,12 @@
+import 'package:envolet_frontend/Services/api.dart';
+import 'package:envolet_frontend/Util/globals.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
-import 'package:envolet_frontend/Widgets/bottomBarWidget.dart';
+import 'package:envolet_frontend/Util/Widgets/bottomBarWidget.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:intl/intl.dart';
+import 'package:month_picker_dialog/month_picker_dialog.dart';
 
 class TrackerPage extends StatefulWidget {
   const TrackerPage({super.key});
@@ -14,12 +19,18 @@ class _TrackerPageState extends State<TrackerPage>
     with SingleTickerProviderStateMixin {
   @override
   late TabController _tabController;
-  String _selectedDate = 'This week';
+  String _selectedDate = DateFormat.yMMM().format(DateTime.now());
+  List<FlSpot> selectedMonthSpots = [];
+  List<FlSpot> generalAverageSpots = [];
+  final transactions = Api.getTransactions();
+  String _selectedCategory = 'General';
+  List<Map<String, dynamic>> categorySummary = [];
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    _fetchChartData();
   }
 
   @override
@@ -29,19 +40,58 @@ class _TrackerPageState extends State<TrackerPage>
   }
 
   void _showDatePicker() async {
-    final DateTime? pickedDate = await showDatePicker(
+    final picked = await showMonthPicker(
       context: context,
       initialDate: DateTime.now(),
       firstDate: DateTime(2020),
-      lastDate: DateTime(2101),
+      lastDate: DateTime(2100),
     );
 
-    if (pickedDate != null) {
+    if (picked != null) {
       setState(() {
-        _selectedDate =
-            '${pickedDate.month}/${pickedDate.day}/${pickedDate.year}';
+        _selectedDate = DateFormat.yMMM().format(picked);
       });
+      _fetchChartData();
     }
+  }
+
+  Future<void> _fetchChartData() async {
+    final selectedMonthDate = DateFormat.yMMM().parse(_selectedDate);
+    final formattedMonth = DateFormat('yyyy-MM').format(selectedMonthDate);
+    final overview = await Api.getMonthlyCategoryPercentages(formattedMonth);
+
+    setState(() {
+      categorySummary = overview;
+    });
+
+    List<double> selectedMonthBuckets = [];
+    List<double> averageBuckets = [];
+
+    if (_selectedCategory == 'General') {
+      selectedMonthBuckets = await Api.getGeneralBucketsByMonth(formattedMonth);
+      averageBuckets = await Api.getGeneralBuckets();
+    } else {
+      selectedMonthBuckets = await Api.getCategoryBucketsByMonth(
+          _selectedCategory, formattedMonth);
+      averageBuckets = await Api.getCategoryBuckets(_selectedCategory);
+    }
+
+    final selectedSpots = selectedMonthBuckets.asMap().entries.map((entry) {
+      final index = entry.key;
+      final value = entry.value;
+      return FlSpot(index.toDouble(), value);
+    }).toList();
+
+    final averageSpots = averageBuckets.asMap().entries.map((entry) {
+      final index = entry.key;
+      final value = entry.value;
+      return FlSpot(index.toDouble(), value);
+    }).toList();
+
+    setState(() {
+      selectedMonthSpots = selectedSpots;
+      generalAverageSpots = averageSpots;
+    });
   }
 
   @override
@@ -79,11 +129,16 @@ class _TrackerPageState extends State<TrackerPage>
 
   Widget _trackerHeader() {
     return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        const Icon(Icons.wallet, color: Colors.blue),
-        const SizedBox(width: 8),
-        const Text('Tracker', style: TextStyle(fontSize: 16)),
-        const Spacer(),
+        Row(
+          children: [
+            const Icon(Icons.wallet, color: Colors.blue),
+            const SizedBox(width: 8),
+            const Text('Tracker', style: TextStyle(fontSize: 16)),
+            const SizedBox(width: 12),
+          ],
+        ),
         GestureDetector(
           onTap: _showDatePicker,
           child: Container(
@@ -103,15 +158,37 @@ class _TrackerPageState extends State<TrackerPage>
                     color: Colors.black87,
                   ),
                 ),
-                const Icon(
-                  Icons.arrow_drop_down,
-                  color: Colors.black87,
-                ),
+                const Icon(Icons.arrow_drop_down, color: Colors.black87),
               ],
             ),
           ),
         ),
       ],
+    );
+  }
+
+  void _showCategoryPicker() {
+    showModalBottomSheet(
+      context: context,
+      builder: (_) {
+        return SizedBox(
+          height: 250,
+          child: CupertinoPicker(
+            backgroundColor: Colors.white,
+            itemExtent: 32.0,
+            scrollController: FixedExtentScrollController(
+              initialItem: categoriesForAnalysis.indexOf(_selectedCategory),
+            ),
+            onSelectedItemChanged: (int index) {
+              setState(() {
+                _selectedCategory = categoriesForAnalysis[index];
+              });
+              _fetchChartData();
+            },
+            children: categoriesForAnalysis.map((e) => Text(e)).toList(),
+          ),
+        );
+      },
     );
   }
 
@@ -138,7 +215,7 @@ class _TrackerPageState extends State<TrackerPage>
           _incomeSpendingRow(),
           const SizedBox(height: 16),
           _lineChartCard(),
-          const SizedBox(height: 16),
+          const SizedBox(height: 30),
           _aiSuggestionCard(),
         ],
       ),
@@ -149,7 +226,7 @@ class _TrackerPageState extends State<TrackerPage>
     return Row(
       mainAxisAlignment: MainAxisAlignment.start,
       children: [
-        // Income
+        // General Average
         Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
@@ -158,7 +235,7 @@ class _TrackerPageState extends State<TrackerPage>
                 Container(width: 4, height: 16, color: Colors.blue.shade900),
                 const SizedBox(width: 6),
                 const Text(
-                  'Income',
+                  'Average',
                   style: TextStyle(
                     fontSize: 15,
                     color: Colors.black45,
@@ -168,9 +245,9 @@ class _TrackerPageState extends State<TrackerPage>
               ],
             ),
             const SizedBox(height: 4),
-            const Text(
-              '\$2,500',
-              style: TextStyle(
+            Text(
+              '${generalAverageSpots.isNotEmpty ? generalAverageSpots.map((e) => e.y).reduce((a, b) => a + b).toInt() ~/ generalAverageSpots.length : 0}\$',
+              style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
                 color: Colors.black,
@@ -179,7 +256,7 @@ class _TrackerPageState extends State<TrackerPage>
           ],
         ),
         const SizedBox(width: 30),
-        // Spending
+        // Selected Month
         Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
@@ -187,8 +264,8 @@ class _TrackerPageState extends State<TrackerPage>
               children: [
                 Container(width: 4, height: 16, color: Colors.cyan),
                 const SizedBox(width: 6),
-                const Text(
-                  'Spending',
+                Text(
+                  _selectedDate,
                   style: TextStyle(
                     fontSize: 15,
                     color: Colors.black45,
@@ -198,15 +275,42 @@ class _TrackerPageState extends State<TrackerPage>
               ],
             ),
             const SizedBox(height: 4),
-            const Text(
-              '\$1,850',
-              style: TextStyle(
+            Text(
+              '${selectedMonthSpots.isNotEmpty ? selectedMonthSpots.map((e) => e.y).reduce((a, b) => a + b).toInt() : 0}\$',
+              style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
                 color: Colors.black,
               ),
             ),
           ],
+        ),
+        const SizedBox(width: 30),
+        GestureDetector(
+          onTap: _showCategoryPicker,
+          child: Container(
+            height: 50,
+            width: 100, // Sabit genişlik
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border.all(color: Colors.grey.withOpacity(0.4)),
+              borderRadius: BorderRadius.circular(5),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Flexible(
+                  child: Text(
+                    _selectedCategory,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 11, color: Colors.black87),
+                  ),
+                ),
+                const Icon(Icons.arrow_drop_down, color: Colors.black87),
+              ],
+            ),
+          ),
         ),
       ],
     );
@@ -243,7 +347,7 @@ class _TrackerPageState extends State<TrackerPage>
                         if (matchingSpot == FlSpot.nullSpot) return null;
 
                         final isIncome = spot.barIndex == 0;
-                        final label = isIncome ? 'Income' : 'Spending';
+                        final label = isIncome ? 'Average' : 'Selected';
                         final color =
                             isIncome ? Colors.blue.shade900 : Colors.cyan;
 
@@ -285,8 +389,9 @@ class _TrackerPageState extends State<TrackerPage>
                     showTitles: true,
                     interval: 1,
                     getTitlesWidget: (value, meta) {
+                      const labels = ['1-6', '7-12', '13-18', '19-24', '25-31'];
                       return Text(
-                        value.toInt().toString(),
+                        labels[value.toInt()],
                         style: const TextStyle(fontSize: 10),
                       );
                     },
@@ -301,40 +406,30 @@ class _TrackerPageState extends State<TrackerPage>
                 show: true,
                 border: Border.all(color: Colors.grey.withOpacity(0.3)),
               ),
-              minX: 15,
-              maxX: 20,
+              minX: 0,
+              maxX: 4,
               minY: 0,
-              maxY: 400,
+              maxY: 500,
               lineBarsData: [
                 LineChartBarData(
                   isCurved: true,
                   barWidth: 3,
-                  color: Colors.blue.shade900,
+                  color: Colors.cyan, // Genel ortalama: açık mavi
                   belowBarData: BarAreaData(show: false),
                   dotData: FlDotData(show: true),
-                  spots: const [
-                    FlSpot(15, 200),
-                    FlSpot(16, 250),
-                    FlSpot(17, 220),
-                    FlSpot(18, 300),
-                    FlSpot(19, 180),
-                    FlSpot(20, 360),
-                  ],
+                  spots: generalAverageSpots.isNotEmpty
+                      ? generalAverageSpots
+                      : [FlSpot(15, 200), FlSpot(16, 250)], // default
                 ),
                 LineChartBarData(
                   isCurved: true,
                   barWidth: 3,
-                  color: Colors.cyan,
+                  color: Colors.blue.shade900, // Seçilen ay: koyu mavi
                   belowBarData: BarAreaData(show: false),
                   dotData: FlDotData(show: true),
-                  spots: const [
-                    FlSpot(15, 160),
-                    FlSpot(16, 280),
-                    FlSpot(17, 200),
-                    FlSpot(18, 260),
-                    FlSpot(19, 150),
-                    FlSpot(20, 340),
-                  ],
+                  spots: selectedMonthSpots.isNotEmpty
+                      ? selectedMonthSpots
+                      : [FlSpot(15, 180), FlSpot(16, 230)], // default
                 ),
               ],
             ),
@@ -392,26 +487,6 @@ class _TrackerPageState extends State<TrackerPage>
                 )
               ],
             ),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () {
-                  // TODO: Start now action
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue.shade800,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(32),
-                  ),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                ),
-                child: const Text(
-                  "Start now",
-                  style: TextStyle(fontSize: 16, color: Colors.white),
-                ),
-              ),
-            ),
           ],
         ),
       ),
@@ -419,23 +494,37 @@ class _TrackerPageState extends State<TrackerPage>
   }
 
   Widget _analyticTab() {
-    final List<Map<String, dynamic>> categories = [
-      {'label': 'Food', 'value': 25.0, 'color': Colors.blue},
-      {'label': 'Transport', 'value': 15.0, 'color': Colors.green},
-      {'label': 'Lifestyle', 'value': 20.0, 'color': Colors.purple},
-      {'label': 'Health', 'value': 10.0, 'color': Colors.orange},
-      {'label': 'Utilities', 'value': 5.0, 'color': Colors.teal},
-      {'label': 'Shopping', 'value': 10.0, 'color': Colors.cyan},
-      {'label': 'Education', 'value': 5.0, 'color': Colors.amber},
-      {'label': 'Entertainment', 'value': 5.0, 'color': Colors.indigo},
-      {'label': 'Travel', 'value': 3.0, 'color': Colors.redAccent},
-    ];
+    final Map<String, Color> categoryColorMap = {
+      'Food & Drinks': Colors.green,
+      'Transportation': Colors.orange,
+      'Housing': Colors.blueGrey,
+      'Bills': Colors.blue,
+      'Health': Colors.redAccent,
+      'Entertainment': Colors.purple,
+      'Shopping': Colors.teal,
+      'Education': Colors.indigo,
+      'Travel': Colors.cyan,
+    };
 
-    final List<PieChartSectionData> sections = categories.map((data) {
+    if (categorySummary.isEmpty) {
+      return const Center(
+        child: Text(
+          "No data available for selected month.",
+          style: TextStyle(color: Colors.black54),
+        ),
+      );
+    }
+
+    final List<Map<String, dynamic>> data = categorySummary;
+
+    final List<PieChartSectionData> sections = data.map((item) {
+      final category = item['category'].toString();
+      final percentage = (item['percentage'] as num).toDouble();
+
       return PieChartSectionData(
-        value: data['value'],
-        title: '${data['value']}%',
-        color: data['color'],
+        value: percentage,
+        title: '${percentage.toStringAsFixed(1)}%',
+        color: categoryColorMap[category] ?? Colors.grey,
         radius: 60,
         titleStyle: const TextStyle(color: Colors.white, fontSize: 12),
       );
@@ -462,7 +551,9 @@ class _TrackerPageState extends State<TrackerPage>
           Wrap(
             spacing: 16,
             runSpacing: 12,
-            children: categories.map((item) {
+            children: data.map((item) {
+              final category = item['category'].toString();
+
               return Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -470,14 +561,15 @@ class _TrackerPageState extends State<TrackerPage>
                     width: 12,
                     height: 12,
                     decoration: BoxDecoration(
-                      color: item['color'],
+                      color: categoryColorMap[category] ?? Colors.grey,
                       shape: BoxShape.circle,
                     ),
                   ),
                   const SizedBox(width: 6),
-                  Text(item['label'],
-                      style:
-                          const TextStyle(fontSize: 13, color: Colors.black87)),
+                  Text(
+                    category,
+                    style: const TextStyle(fontSize: 13, color: Colors.black87),
+                  ),
                 ],
               );
             }).toList(),

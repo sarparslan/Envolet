@@ -46,7 +46,8 @@ dependencies:
   fl_chart: ^0.71.0
   shared_preferences: ^2.5.3
   flutter_secure_storage: ^9.0.0
-  
+  month_picker_dialog: ^6.2.2
+
   
 dev_dependencies:
   flutter_test:

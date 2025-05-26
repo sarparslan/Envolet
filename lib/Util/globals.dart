@@ -35,6 +35,19 @@ final List<String> categories = [
   "Travel",
 ];
 
+final List<String> categoriesForAnalysis = [
+  "General",
+  "Food & Drinks",
+  "Transportation",
+  "Housing",
+  "Bills",
+  "Health",
+  "Entertainment",
+  "Shopping",
+  "Education",
+  "Travel",
+];
+
 Map<String, String> currencySymbolMap = {
   'USD': '\$',
   'EUR': '€',

@@ -3,7 +3,7 @@ import 'package:envolet_frontend/Util/globals.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:envolet_frontend/Services/api.dart';
-import 'package:envolet_frontend/Widgets/bottomBarWidget.dart';
+import 'package:envolet_frontend/Util/Widgets/bottomBarWidget.dart';
 import 'package:flutter/services.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:intl/intl.dart';

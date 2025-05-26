@@ -1,9 +1,9 @@
 import 'package:envolet_frontend/Services/api.dart';
 import 'package:envolet_frontend/Util/alart.dart';
 import 'package:envolet_frontend/Util/globals.dart';
-import 'package:envolet_frontend/Widgets/CardAdditionWidget.dart';
-import 'package:envolet_frontend/Widgets/CreditCard.dart';
-import 'package:envolet_frontend/Widgets/bottomBarWidget.dart';
+import 'package:envolet_frontend/Util/Widgets/CardAdditionWidget.dart';
+import 'package:envolet_frontend/Util/Widgets/CreditCard.dart';
+import 'package:envolet_frontend/Util/Widgets/bottomBarWidget.dart';
 import 'package:flutter/material.dart';
 import 'package:dotted_border/dotted_border.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -97,7 +97,9 @@ class _HomePageState extends State<HomePage> {
     return Row(
       children: [
         Text(
-          "Welcome, $userName.",
+          ("Welcome, " +
+                  (userName.toString() + " " + userSurname.toString())) ??
+              "",
           style: TextStyle(
             fontSize: 17,
             fontWeight: FontWeight.bold,

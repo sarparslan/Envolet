@@ -16,16 +16,4 @@ class Helper {
   double getDeviceHeight(BuildContext context) {
     return MediaQuery.of(context).size.height;
   }
-
-  static void errorAlertAndNavigate(
-      BuildContext context, String content, String title) {
-    QuickAlert.show(
-      context: context,
-      type: QuickAlertType.error,
-      text: content,
-      title: title,
-      confirmBtnColor: Colors.red,
-      confirmBtnText: "Continue",
-    );
-  }
 }

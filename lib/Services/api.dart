@@ -223,6 +223,105 @@ class Api {
     }
   }
 
+  static Future<List<double>> getGeneralBuckets() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString("token");
+    if (token == null) return [];
+
+    final header = {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer $token',
+    };
+
+    final response = await http.get(
+      Uri.parse("$baseUrl/transactions/general-buckets"),
+      headers: header,
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body)['buckets'];
+      return List<double>.from(data.map((e) => e.toDouble()));
+    } else {
+      print("getGeneralBuckets failed: ${response.body}");
+      return [];
+    }
+  }
+
+  static Future<List<double>> getCategoryBuckets(String category) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString("token");
+    if (token == null) return [];
+
+    final header = {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer $token',
+    };
+
+    final uri =
+        Uri.parse("$baseUrl/transactions/category-buckets?category=$category");
+
+    final response = await http.get(uri, headers: header);
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return List<double>.from(data['buckets'].map((e) => e.toDouble()));
+    } else {
+      print("getCategoryBuckets failed: ${response.body}");
+      return [];
+    }
+  }
+
+  static Future<List<double>> getGeneralBucketsByMonth(String month) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString("token");
+    if (token == null) return [];
+
+    final header = {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer $token',
+    };
+
+    final response = await http.get(
+      Uri.parse("$baseUrl/transactions/general-buckets-by-month?month=$month"),
+      headers: header,
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body)['buckets'];
+      return List<double>.from(data.map((e) => e.toDouble()));
+    } else {
+      print("getGeneralBucketsByMonth failed: ${response.body}");
+      return [];
+    }
+  }
+
+  static Future<List<double>> getCategoryBucketsByMonth(
+      String category, String month) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString("token");
+    if (token == null) return [];
+
+    final header = {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer $token',
+    };
+
+    final response = await http.get(
+      Uri.parse(
+        "$baseUrl/transactions/category-buckets-by-month?category=$category&month=$month",
+      ),
+      headers: header,
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body)['buckets'];
+      return List<double>.from(data.map((e) => e.toDouble()));
+    } else {
+      print("getCategoryBucketsByMonth failed: ${response.body}");
+      return [];
+    }
+  }
+
   // Delete Transaction
   static Future<bool> deleteTransaction({
     required String id,
@@ -247,6 +346,32 @@ class Api {
     } else {
       print("DeleteTransaction failed: ${response.body}");
       return false;
+    }
+  }
+
+  static Future<List<Map<String, dynamic>>> getMonthlyCategoryPercentages(
+      String month) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString("token");
+    if (token == null) return [];
+
+    final header = {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer $token',
+    };
+
+    final response = await http.get(
+      Uri.parse(
+          "$baseUrl/transactions/monthly-category-percentages?month=$month"),
+      headers: header,
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body)['data'];
+      return List<Map<String, dynamic>>.from(data);
+    } else {
+      print("getMonthlyCategoryPercentages failed: ${response.body}");
+      return [];
     }
   }
 
@@ -367,4 +492,6 @@ class Api {
 
     return response.statusCode == 200;
   }
+
+  static getCategoryPercentagesByMonth(formattedMonth) {}
 }
