@@ -2,7 +2,6 @@
 library globals;
 
 import 'dart:async';
-
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/material.dart';
@@ -10,6 +9,8 @@ import 'package:flutter/material.dart';
 String? userEmail;
 String? userName;
 String? userSurname;
+
+final String apiKey = "API_KEY";
 
 final Map<String, IconData> categoryIcons = {
   "Food & Drinks": FontAwesomeIcons.utensils,

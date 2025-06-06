@@ -75,6 +75,7 @@ flutter:
   assets:
     - images/loginOnboardingView.png
     - images/registerOnboardingView.png
+    - images/logo.png
 
 
 

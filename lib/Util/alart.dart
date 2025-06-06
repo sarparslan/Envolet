@@ -57,7 +57,7 @@ class Util {
       title: "Success",
       text: title,
       confirmBtnText: "Ok",
-      confirmBtnColor: const Color(0xFF2D6BFF), // tam mavi
+      confirmBtnColor: const Color(0xFF2D6BFF),
       backgroundColor: Colors.white,
       barrierColor: Colors.black.withOpacity(0.2),
       titleColor: Colors.black,
@@ -432,7 +432,7 @@ class Util {
                       width: 72,
                       height: 72,
                       decoration: const BoxDecoration(
-                        color: Color(0xFF00C851), // QuickAlert success yeşili
+                        color: Color(0xFF00C851),
                         shape: BoxShape.circle,
                       ),
                       child: const Center(
@@ -508,7 +508,7 @@ class Util {
                       width: 72,
                       height: 72,
                       decoration: const BoxDecoration(
-                        color: Color(0xFF00C851), // QuickAlert success yeşili
+                        color: Color(0xFF00C851),
                         shape: BoxShape.circle,
                       ),
                       child: const Center(

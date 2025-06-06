@@ -1,13 +1,12 @@
 import 'dart:convert';
+import 'package:envolet_frontend/Util/globals.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:envolet_frontend/Model/login_model.dart';
 import 'package:envolet_frontend/Model/register_model.dart';
 
 class Api {
-  static const String baseUrl = "http://localhost:5001";
-  //static const String baseUrl = 'http://172.20.10.6:5001';
-  // static const String baseUrl = 'http://192.168.0.23:5001';
+  static final String baseUrl = "http://localhost:5001";
 
   static Future<LoginModel?> loginCall({
     required String email,
@@ -69,6 +68,38 @@ class Api {
       return result;
     } else {
       print("Register failed: ${response.body}");
+      return null;
+    }
+  }
+
+  static Future<String?> getOpenRouterResponse(String userInput) async {
+    const endpoint = 'https://openrouter.ai/api/v1/chat/completions';
+
+    final headers = {
+      'Authorization': 'Bearer $apiKey',
+      'Content-Type': 'application/json',
+    };
+
+    final body = jsonEncode({
+      'model': 'google/gemini-2.0-flash-exp:free',
+      'messages': [
+        {"role": "user", "content": userInput}
+      ],
+      'max_tokens': 100,
+      'temperature': 0.7,
+    });
+
+    final response = await http.post(
+      Uri.parse(endpoint),
+      headers: headers,
+      body: body,
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return data['choices'][0]['message']['content'];
+    } else {
+      print("OpenRouter failed: ${response.body}");
       return null;
     }
   }

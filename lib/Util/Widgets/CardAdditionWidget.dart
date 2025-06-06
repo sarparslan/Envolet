@@ -7,7 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:envolet_frontend/Util/Helper/ThousandsFormatter.dart';
 
 class CardAdditionDialog extends StatefulWidget {
-  final Map<String, String>? initialData; // For editing existing card data
+  final Map<String, String>? initialData;
 
   const CardAdditionDialog({Key? key, this.initialData}) : super(key: key);
 
@@ -24,7 +24,6 @@ class _CardAdditionDialogState extends State<CardAdditionDialog> {
   String _selectedCardBrand = "";
   late Color _cardColor;
 
-  // 5 popular card brands + an empty one for "None"
   final List<String> _cardBrandOptions = [
     'Visa',
     'MasterCard',
@@ -36,7 +35,6 @@ class _CardAdditionDialogState extends State<CardAdditionDialog> {
     'Other',
   ];
 
-  // Predefined color options
   final List<Color> _colorOptions = [
     Colors.blue,
     Colors.red,
@@ -75,7 +73,6 @@ class _CardAdditionDialogState extends State<CardAdditionDialog> {
   void initState() {
     super.initState();
     _bankName = widget.initialData?['bankName'] ?? '';
-    // Remove commas if any stored
     _amount = (widget.initialData?['balance'] ?? '').replaceAll(',', '');
     _cardTail = widget.initialData?['cardTail'] ?? '';
     _selectedCardBrand = widget.initialData?['cardBrand'] ?? '';
@@ -94,14 +91,12 @@ class _CardAdditionDialogState extends State<CardAdditionDialog> {
     }
   }
 
-  // Convert hex string to Color
   Color _hexToColor(String hex) {
     hex = hex.replaceAll("#", "");
     if (hex.length == 6) hex = "FF" + hex;
     return Color(int.parse(hex, radix: 16));
   }
 
-  // Convert Color to hex string
   String _colorToHex(Color color) =>
       '#${color.value.toRadixString(16).substring(2).toUpperCase()}';
 
@@ -223,11 +218,9 @@ class _CardAdditionDialogState extends State<CardAdditionDialog> {
                       : null,
                 ),
                 SizedBox(height: 8),
-                // Amount
-                // Amount
+
                 _buildTextField(
-                  label:
-                      'Amount (${globalCurrency ?? ''})', // burada currency yazıyor
+                  label: 'Amount (${globalCurrency ?? ''})',
                   initialValue: _amount,
                   onSaved: (val) => _amount = val!,
                   validator: (val) {
@@ -279,14 +272,12 @@ class _CardAdditionDialogState extends State<CardAdditionDialog> {
             ),
           ),
         ),
-        // Actions: Cancel, Delete, Save on the same row
         actions: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               SizedBox(width: 10),
 
-              // Delete (only if editing)
               if (widget.initialData != null)
                 ElevatedButton(
                   onPressed: _deleteCard,

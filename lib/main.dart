@@ -1,5 +1,6 @@
 import 'package:envolet_frontend/Auth/login.dart';
 import 'package:envolet_frontend/Screens/HomePage.dart';
+import 'package:envolet_frontend/Util/Widgets/splashScreen.dart';
 import 'package:flutter/material.dart';
 
 void main() {
@@ -14,6 +15,12 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
+      initialRoute: '/',
+      routes: {
+        '/': (context) => SplashScreen(),
+        '/auth': (context) => LoginPage(),
+        '/home': (context) => HomePage(),
+      },
       theme: ThemeData(
         primarySwatch: Colors.blue,
         primaryColor: Colors.blue,
@@ -41,7 +48,6 @@ class MyApp extends StatelessWidget {
           foregroundColor: Colors.white,
         ),
       ),
-      home: LoginPage(),
     );
   }
 }

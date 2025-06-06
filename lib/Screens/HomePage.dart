@@ -21,12 +21,32 @@ class _HomePageState extends State<HomePage> {
   List<Map<String, dynamic>> latestTransactions = [];
   List<Map<String, dynamic>> cards = [];
 
+  bool isLoading = true;
+
   @override
   void initState() {
     super.initState();
     _controller = PageController(viewportFraction: 0.8);
-    _fetchLatestTransactions();
-    _fetchAssets();
+    _loadAllData();
+  }
+
+  Future<void> _loadAllData() async {
+    setState(() => isLoading = true);
+    await _fetchUserEmail();
+    await _fetchLatestTransactions();
+    await _fetchAssets();
+    setState(() => isLoading = false);
+  }
+
+  Future<void> _fetchUserEmail() async {
+    final user = await Api.getMe();
+    if (user != null && mounted) {
+      setState(() {
+        userEmail = user['email'];
+        userName = user['name'];
+        userSurname = user['surname'];
+      });
+    }
   }
 
   @override
@@ -54,36 +74,42 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            Padding(
-              padding: EdgeInsets.only(top: 80, left: 20, bottom: 15),
-              child: title(),
-            ),
-            cardRow(),
-            Padding(
-              padding: EdgeInsets.only(top: 40, left: 20),
-              child: Row(
+      body: isLoading
+          ? const Center(
+              child: CircularProgressIndicator(
+                color: Colors.blue,
+              ),
+            )
+          : SingleChildScrollView(
+              child: Column(
                 children: [
-                  Text(
-                    'Latest Transactions',
-                    style: TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black,
+                  Padding(
+                    padding: EdgeInsets.only(top: 80, left: 20, bottom: 15),
+                    child: title(),
+                  ),
+                  cardRow(),
+                  Padding(
+                    padding: EdgeInsets.only(top: 40, left: 20),
+                    child: Row(
+                      children: [
+                        Text(
+                          'Latest Transactions',
+                          style: TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black,
+                          ),
+                        ),
+                      ],
                     ),
+                  ),
+                  Padding(
+                    padding: EdgeInsets.only(top: 20),
+                    child: latestTransactionsRow(),
                   ),
                 ],
               ),
             ),
-            Padding(
-              padding: EdgeInsets.only(top: 20),
-              child: latestTransactionsRow(),
-            ),
-          ],
-        ),
-      ),
       bottomNavigationBar: Padding(
         padding: EdgeInsets.only(
           bottom: MediaQuery.of(context).size.height * 0.03,
@@ -97,9 +123,7 @@ class _HomePageState extends State<HomePage> {
     return Row(
       children: [
         Text(
-          ("Welcome, " +
-                  (userName.toString() + " " + userSurname.toString())) ??
-              "",
+          ("Welcome, " + (userName.toString() + " " + userSurname.toString())),
           style: TextStyle(
             fontSize: 17,
             fontWeight: FontWeight.bold,
@@ -224,7 +248,6 @@ class _HomePageState extends State<HomePage> {
                         if (createdAsset != null) {
                           await _fetchAssets();
 
-                          // ✅ Success Alert
                           Util.showSuccessAlertForCardUpdateaAdDelete(
                             context,
                             "Your card was successfully added.",

@@ -1,4 +1,3 @@
-import 'package:envolet_frontend/Services/api.dart';
 import 'package:envolet_frontend/Util/alart.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -16,18 +15,6 @@ class _SettingsPageState extends State<SettingsPage> {
   @override
   void initState() {
     super.initState();
-    _fetchUserEmail();
-  }
-
-  Future<void> _fetchUserEmail() async {
-    final user = await Api.getMe();
-    if (user != null && mounted) {
-      setState(() {
-        userEmail = user['email'];
-        userName = user['name'];
-        userSurname = user['surname'];
-      });
-    }
   }
 
   final List<String> currencies = [
@@ -137,8 +124,7 @@ class _SettingsPageState extends State<SettingsPage> {
             _SectionHeader("Account Info", Colors.black),
             _SettingsTileNoArrow(
                 title: "Name",
-                value: (userName.toString() + " " + userSurname.toString()) ??
-                    "loading...",
+                value: (userName.toString() + " " + userSurname.toString()),
                 textColor: Colors.black),
             _SettingsTileNoArrow(
                 title: "Email",

@@ -26,6 +26,62 @@ class _TrackerPageState extends State<TrackerPage>
   String _selectedCategory = 'General';
   List<Map<String, dynamic>> categorySummary = [];
 
+  late String envoletAiSuggestionText = "";
+
+  bool _aiSuggestionVisible = false;
+
+  void _talkToAi() async {
+    setState(() {
+      envoletAiSuggestionText = "Fetching response...";
+    });
+
+    final selectedMonthAvg = selectedMonthSpots.isNotEmpty
+        ? (selectedMonthSpots.map((e) => e.y).reduce((a, b) => a + b) /
+                selectedMonthSpots.length)
+            .toInt()
+        : 0;
+
+    final generalAvg = generalAverageSpots.isNotEmpty
+        ? (generalAverageSpots.map((e) => e.y).reduce((a, b) => a + b) /
+                generalAverageSpots.length)
+            .toInt()
+        : 0;
+
+    final category = _selectedCategory;
+    final month = _selectedDate;
+
+    final userInput = """
+The user selected the category: $category for the month: $month.
+
+Their average spending this month is \$$selectedMonthAvg, while their overall average is \$$generalAvg.
+
+Based on this, briefly suggest a friendly, actionable, and sustainable way they can reduce or improve spending in this category.
+
+Keep the response short and clear — strictly no more than 3 sentences. Avoid numeric advice. Focus on helpful habits like cooking at home, using public transport, or spending more time in nature.
+""";
+
+    print("🧠 [AI INPUT]: $userInput");
+
+    final response = await Api.getOpenRouterResponse(userInput);
+
+    if (response != null) {
+      print("✅ [AI RESPONSE]: $response");
+      setState(() {
+        envoletAiSuggestionText = response.toString();
+        _aiSuggestionVisible = true;
+      });
+    } else {
+      print("❌ [AI ERROR]: Response is null");
+      setState(() {
+        envoletAiSuggestionText =
+            "Could not get response from AI. Please try again";
+        setState(() {
+          _aiSuggestionVisible = false;
+        });
+      });
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -92,6 +148,7 @@ class _TrackerPageState extends State<TrackerPage>
       selectedMonthSpots = selectedSpots;
       generalAverageSpots = averageSpots;
     });
+    _talkToAi();
   }
 
   @override
@@ -216,7 +273,7 @@ class _TrackerPageState extends State<TrackerPage>
           const SizedBox(height: 16),
           _lineChartCard(),
           const SizedBox(height: 30),
-          _aiSuggestionCard(),
+          _aiSuggestionCard(envoletAiSuggestionText.toString()),
         ],
       ),
     );
@@ -317,6 +374,14 @@ class _TrackerPageState extends State<TrackerPage>
   }
 
   Widget _lineChartCard() {
+    final allYValues = [
+      ...selectedMonthSpots.map((e) => e.y),
+      ...generalAverageSpots.map((e) => e.y),
+    ];
+    final double maxY = allYValues.isNotEmpty
+        ? (allYValues.reduce((a, b) => a > b ? a : b)) * 1.2
+        : 500;
+
     return AspectRatio(
       aspectRatio: 1.2,
       child: Card(
@@ -331,36 +396,34 @@ class _TrackerPageState extends State<TrackerPage>
               lineTouchData: LineTouchData(
                 handleBuiltInTouches: true,
                 touchTooltipData: LineTouchTooltipData(
-                    tooltipBorderRadius: BorderRadius.circular(8),
-                    tooltipPadding: const EdgeInsets.all(8),
-                    tooltipMargin: 10,
-                    getTooltipColor: (spot) => Colors.white,
-                    getTooltipItems: (touchedSpots) {
-                      return touchedSpots.map((spot) {
-                        final touchedX = spot.x;
-                        final matchingSpot = spot.bar.spots.firstWhere(
-                          (s) => s.x == touchedX,
-                          orElse: () => FlSpot.nullSpot,
-                        );
+                  tooltipBorderRadius: BorderRadius.circular(8),
+                  tooltipPadding: const EdgeInsets.all(8),
+                  tooltipMargin: 10,
+                  getTooltipColor: (spot) => Colors.white,
+                  getTooltipItems: (touchedSpots) {
+                    return touchedSpots.map((spot) {
+                      final touchedX = spot.x;
+                      final matchingSpot = spot.bar.spots.firstWhere(
+                        (s) => s.x == touchedX,
+                        orElse: () => FlSpot.nullSpot,
+                      );
+                      if (matchingSpot == FlSpot.nullSpot) return null;
+                      final isIncome = spot.barIndex == 0;
+                      final label = isIncome ? 'Average' : 'Selected';
+                      final color =
+                          isIncome ? Colors.blue.shade900 : Colors.cyan;
 
-                        // Spot yoksa gösterme
-                        if (matchingSpot == FlSpot.nullSpot) return null;
-
-                        final isIncome = spot.barIndex == 0;
-                        final label = isIncome ? 'Average' : 'Selected';
-                        final color =
-                            isIncome ? Colors.blue.shade900 : Colors.cyan;
-
-                        return LineTooltipItem(
-                          '$label: \$${spot.y.toInt()}',
-                          TextStyle(
-                            color: color,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                          ),
-                        );
-                      }).toList();
-                    }),
+                      return LineTooltipItem(
+                        '$label: \$${spot.y.toInt()}',
+                        TextStyle(
+                          color: color,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      );
+                    }).toList();
+                  },
+                ),
               ),
               gridData: FlGridData(
                 show: true,
@@ -377,10 +440,8 @@ class _TrackerPageState extends State<TrackerPage>
                     reservedSize: 42,
                     interval: 100,
                     getTitlesWidget: (value, meta) {
-                      return Text(
-                        '\$${value.toInt()}',
-                        style: const TextStyle(fontSize: 10),
-                      );
+                      return Text('\$${value.toInt()}',
+                          style: const TextStyle(fontSize: 10));
                     },
                   ),
                 ),
@@ -390,10 +451,8 @@ class _TrackerPageState extends State<TrackerPage>
                     interval: 1,
                     getTitlesWidget: (value, meta) {
                       const labels = ['1-6', '7-12', '13-18', '19-24', '25-31'];
-                      return Text(
-                        labels[value.toInt()],
-                        style: const TextStyle(fontSize: 10),
-                      );
+                      return Text(labels[value.toInt()],
+                          style: const TextStyle(fontSize: 10));
                     },
                   ),
                 ),
@@ -409,27 +468,27 @@ class _TrackerPageState extends State<TrackerPage>
               minX: 0,
               maxX: 4,
               minY: 0,
-              maxY: 500,
+              maxY: maxY,
               lineBarsData: [
                 LineChartBarData(
                   isCurved: true,
                   barWidth: 3,
-                  color: Colors.cyan, // Genel ortalama: açık mavi
+                  color: Colors.cyan,
                   belowBarData: BarAreaData(show: false),
                   dotData: FlDotData(show: true),
                   spots: generalAverageSpots.isNotEmpty
                       ? generalAverageSpots
-                      : [FlSpot(15, 200), FlSpot(16, 250)], // default
+                      : [FlSpot(0, 200), FlSpot(1, 250)],
                 ),
                 LineChartBarData(
                   isCurved: true,
                   barWidth: 3,
-                  color: Colors.blue.shade900, // Seçilen ay: koyu mavi
+                  color: Colors.blue.shade900,
                   belowBarData: BarAreaData(show: false),
                   dotData: FlDotData(show: true),
                   spots: selectedMonthSpots.isNotEmpty
                       ? selectedMonthSpots
-                      : [FlSpot(15, 180), FlSpot(16, 230)], // default
+                      : [FlSpot(0, 180), FlSpot(1, 230)],
                 ),
               ],
             ),
@@ -439,52 +498,37 @@ class _TrackerPageState extends State<TrackerPage>
     );
   }
 
-  Widget _aiSuggestionCard() {
+  Widget _aiSuggestionCard(String aiSuggestionResponse) {
     return Card(
       color: Colors.white,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       elevation: 3,
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(16),
         child: Column(
           children: [
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(
-                  Icons.attach_money_rounded,
-                  color: Colors.lightBlue,
-                  size: 36,
-                ),
+                const Icon(Icons.attach_money_rounded,
+                    color: Colors.lightBlue, size: 36),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
+                    children: [
+                      const Text("Envolet AI says:",
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 16)),
+                      const SizedBox(height: 6),
                       Text(
-                        "Envolet AI says:",
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                      ),
-                      SizedBox(height: 6),
-                      Text(
-                        "You are spending way too much money on global food chains. Maybe it’s time to cook your own food, or support local stores!",
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.black87,
-                        ),
+                        aiSuggestionResponse,
+                        style: const TextStyle(
+                            fontSize: 14, color: Colors.black87),
                       ),
                     ],
                   ),
                 ),
-                GestureDetector(
-                  onTap: () {
-                    // TODO: AI kutusunu kapat
-                  },
-                  child: const Icon(Icons.close, color: Colors.grey),
-                )
               ],
             ),
           ],
