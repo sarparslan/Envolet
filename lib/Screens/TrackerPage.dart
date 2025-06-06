@@ -30,6 +30,25 @@ class _TrackerPageState extends State<TrackerPage>
 
   bool _aiSuggestionVisible = false;
 
+  String getCurrencySymbol(String currency) {
+    switch (currency) {
+      case 'USD':
+        return '\$';
+      case 'EUR':
+        return '€';
+      case 'GBP':
+        return '£';
+      case 'JPY':
+        return '¥';
+      case 'TL':
+        return '₺';
+      case 'CHF':
+        return '₣';
+      default:
+        return '\$';
+    }
+  }
+
   void _talkToAi() async {
     setState(() {
       envoletAiSuggestionText = "Fetching response...";
@@ -301,15 +320,21 @@ Keep the response short and clear — strictly no more than 3 sentences. Avoid n
                 ),
               ],
             ),
-            const SizedBox(height: 4),
-            Text(
-              '${generalAverageSpots.isNotEmpty ? generalAverageSpots.map((e) => e.y).reduce((a, b) => a + b).toInt() ~/ generalAverageSpots.length : 0}\$',
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Colors.black,
-              ),
-            ),
+            const SizedBox(height: 0.5),
+            Row(
+              children: [
+                Text(
+                  '${generalAverageSpots.isNotEmpty ? generalAverageSpots.map((e) => e.y).reduce((a, b) => a + b).toInt() ~/ generalAverageSpots.length : 0}',
+                  style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black),
+                ),
+                const SizedBox(width: 4),
+                Icon(currencyIcons[globalCurrency] ?? Icons.attach_money,
+                    size: 18, color: Colors.black),
+              ],
+            )
           ],
         ),
         const SizedBox(width: 30),
@@ -331,15 +356,21 @@ Keep the response short and clear — strictly no more than 3 sentences. Avoid n
                 ),
               ],
             ),
-            const SizedBox(height: 4),
-            Text(
-              '${selectedMonthSpots.isNotEmpty ? selectedMonthSpots.map((e) => e.y).reduce((a, b) => a + b).toInt() : 0}\$',
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Colors.black,
-              ),
-            ),
+            const SizedBox(height: 0.5),
+            Row(
+              children: [
+                Text(
+                  '${selectedMonthSpots.isNotEmpty ? selectedMonthSpots.map((e) => e.y).reduce((a, b) => a + b).toInt() : 0}',
+                  style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black),
+                ),
+                const SizedBox(width: 4),
+                Icon(currencyIcons[globalCurrency] ?? Icons.attach_money,
+                    size: 18, color: Colors.black),
+              ],
+            )
           ],
         ),
         const SizedBox(width: 30),
@@ -414,7 +445,7 @@ Keep the response short and clear — strictly no more than 3 sentences. Avoid n
                           isIncome ? Colors.blue.shade900 : Colors.cyan;
 
                       return LineTooltipItem(
-                        '$label: \$${spot.y.toInt()}',
+                        '$label: ${spot.y.toInt()}${getCurrencySymbol(globalCurrency)}',
                         TextStyle(
                           color: color,
                           fontWeight: FontWeight.bold,
@@ -440,8 +471,19 @@ Keep the response short and clear — strictly no more than 3 sentences. Avoid n
                     reservedSize: 42,
                     interval: 100,
                     getTitlesWidget: (value, meta) {
-                      return Text('\$${value.toInt()}',
-                          style: const TextStyle(fontSize: 10));
+                      return Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text('${value.toInt()}',
+                              style: const TextStyle(fontSize: 10)),
+                          const SizedBox(width: 2),
+                          Icon(
+                              currencyIcons[globalCurrency] ??
+                                  Icons.attach_money,
+                              size: 10,
+                              color: Colors.black),
+                        ],
+                      );
                     },
                   ),
                 ),

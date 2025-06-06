@@ -26,6 +26,15 @@ class _SettingsPageState extends State<SettingsPage> {
     "CHF",
   ];
 
+  Map<String, IconData> currencyIcons = {
+    'USD': Icons.attach_money,
+    'EUR': Icons.euro_symbol,
+    'GBP': Icons.currency_pound,
+    'JPY': Icons.currency_yen,
+    'TL': Icons.currency_lira,
+    'CHF': Icons.currency_franc,
+  };
+
   String selectedCurrency = globalCurrency;
 
   void _showCurrencyPicker() {
