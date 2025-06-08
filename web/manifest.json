@@ -1,11 +1,11 @@
 {
-    "name": "envolet_frontend",
-    "short_name": "envolet_frontend",
+    "name": "Envolet",
+    "short_name": "Envolet",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "Envolet - a personal finance tracker.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

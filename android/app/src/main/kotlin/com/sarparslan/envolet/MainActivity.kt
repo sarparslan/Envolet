@@ -1,4 +1,4 @@
-package com.example.envolet_frontend
+package com.sarparslan.envolet
 
 import io.flutter.embedding.android.FlutterActivity
 
