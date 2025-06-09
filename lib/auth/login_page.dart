@@ -1,8 +1,7 @@
-import 'package:envolet_frontend/Auth/register.dart';
-import 'package:envolet_frontend/Screens/HomePage.dart';
-import 'package:envolet_frontend/Services/api.dart';
-import 'package:envolet_frontend/Util/Helper/helper.dart';
-import 'package:envolet_frontend/Util/alart.dart';
+import 'package:envolet_frontend/auth/register_page.dart';
+import 'package:envolet_frontend/screens/home_page.dart';
+import 'package:envolet_frontend/services/api_service.dart';
+import 'package:envolet_frontend/utils/dialogs.dart';
 
 import 'package:flutter/material.dart';
 
@@ -26,8 +25,8 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
-    final height = Helper().getDeviceHeight(context);
-    final width = Helper().getDeviceWidth(context);
+    final height = MediaQuery.sizeOf(context).height;
+    final width = MediaQuery.sizeOf(context).width;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -147,15 +146,15 @@ class _LoginPageState extends State<LoginPage> {
             return;
           }
 
-          final result = await Api.loginCall(email: email, password: password);
+          final result =
+              await ApiService.loginCall(email: email, password: password);
+          if (!context.mounted) return;
           if (result != null) {
-            print("✅ Login successful. Token: ${result.token}");
-
             clearLoginControllers();
-            Util.navigateWithFade(context, HomePage());
+            AppDialogs.navigateWithFade(context, HomePage());
           } else {
-            print("❌ Login failed for email: $email");
-            Util.errorAlertAndNavigate(
+            debugPrint("Login failed");
+            AppDialogs.errorAlertAndNavigate(
               context,
               "Login failed. Please check your credentials and try again.",
               "Login Error",

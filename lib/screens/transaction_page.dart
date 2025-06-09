@@ -1,9 +1,9 @@
-import 'package:envolet_frontend/Util/alart.dart';
-import 'package:envolet_frontend/Util/globals.dart';
+import 'package:envolet_frontend/utils/dialogs.dart';
+import 'package:envolet_frontend/utils/globals.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:envolet_frontend/Services/api.dart';
-import 'package:envolet_frontend/Util/Widgets/bottomBarWidget.dart';
+import 'package:envolet_frontend/services/api_service.dart';
+import 'package:envolet_frontend/widgets/bottom_nav_bar.dart';
 import 'package:flutter/services.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:intl/intl.dart';
@@ -26,7 +26,7 @@ class _TransactionPageState extends State<TransactionPage> {
   }
 
   Future<void> fetchTransactions() async {
-    final data = await Api.getTransactions();
+    final data = await ApiService.getTransactions();
     setState(() {
       transactions = data;
       isLoading = false;
@@ -60,14 +60,15 @@ class _TransactionPageState extends State<TransactionPage> {
   }
 
   void _deleteTransaction(Map<String, dynamic> transaction) async {
-    final success = await Api.deleteTransaction(id: transaction['_id']);
+    final success = await ApiService.deleteTransaction(id: transaction['_id']);
+    if (!mounted) return;
     if (success) {
-      Util.showSuccessAlert(context, "Transaction deleted successfully!");
+      AppDialogs.showSuccessAlert(context, "Transaction deleted successfully!");
       setState(() {
         transactions.removeWhere((item) => item["_id"] == transaction["_id"]);
       });
     } else {
-      Util.errorAlertAndNavigate(
+      AppDialogs.errorAlertAndNavigate(
           context, "Failed to delete transaction.", "Error");
     }
   }
@@ -245,16 +246,17 @@ class _TransactionPageState extends State<TransactionPage> {
                                   .replaceAll(',', ''));
                               if (parsed == null) return;
 
-                              final success = await Api.addTransaction(
+                              final success = await ApiService.addTransaction(
                                 amount: parsed,
                                 category: selectedCategory,
                                 date: DateFormat('yyyy-MM-dd')
                                     .format(selectedDate),
                               );
 
+                              if (!context.mounted) return;
                               if (success) {
                                 Navigator.of(context).pop();
-                                Util.showTransactionSuccessBottomSheet(
+                                AppDialogs.showTransactionSuccessBottomSheet(
                                   context,
                                   category: selectedCategory,
                                   amount: parsed,
@@ -419,7 +421,8 @@ class _TransactionPageState extends State<TransactionPage> {
                                   .replaceAll(',', ''));
                               if (parsed == null) return;
 
-                              final success = await Api.updateTransaction(
+                              final success =
+                                  await ApiService.updateTransaction(
                                 id: transaction["_id"],
                                 amount: parsed,
                                 category: selectedCategory,
@@ -427,9 +430,11 @@ class _TransactionPageState extends State<TransactionPage> {
                                     .format(selectedDate),
                               );
 
+                              if (!context.mounted) return;
                               if (success) {
                                 Navigator.of(context).pop();
-                                Util.showTransactionUpdateSuccessBottomSheet(
+                                AppDialogs
+                                    .showTransactionUpdateSuccessBottomSheet(
                                   context,
                                   category: selectedCategory,
                                   amount: parsed,
@@ -437,7 +442,7 @@ class _TransactionPageState extends State<TransactionPage> {
                                 );
                                 fetchTransactions();
                               } else {
-                                Util.errorAlertAndNavigate(context,
+                                AppDialogs.errorAlertAndNavigate(context,
                                     "Failed to update transaction.", "Error");
                               }
                             }
@@ -520,7 +525,7 @@ class _TransactionPageState extends State<TransactionPage> {
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  "$formattedDate",
+                                  formattedDate,
                                   style: const TextStyle(
                                     fontSize: 13,
                                     color: Colors.grey,
@@ -563,14 +568,14 @@ class _TransactionPageState extends State<TransactionPage> {
                 ),
       floatingActionButton: FloatingActionButton(
         onPressed: _openAddTransactionDialog,
-        child: const Icon(Icons.add),
         backgroundColor: Colors.blue,
+        child: const Icon(Icons.add),
       ),
       bottomNavigationBar: Padding(
         padding: EdgeInsets.only(
           bottom: MediaQuery.of(context).size.height * 0.03,
         ),
-        child: BottomNavBarWidget(currentPage: Pages.TransactionPage),
+        child: BottomNavBarWidget(currentPage: Pages.transaction),
       ),
     );
   }

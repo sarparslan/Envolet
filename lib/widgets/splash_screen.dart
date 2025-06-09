@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SplashScreen extends StatefulWidget {
+  const SplashScreen({super.key});
+
   @override
-  _SplashScreenState createState() => _SplashScreenState();
+  State<SplashScreen> createState() => _SplashScreenState();
 }
 
 class _SplashScreenState extends State<SplashScreen>
@@ -32,6 +34,7 @@ class _SplashScreenState extends State<SplashScreen>
 
     _controller.forward().then((value) async {
       bool userLoggedIn = await isLoggedIn();
+      if (!mounted) return;
       if (userLoggedIn) {
         Navigator.of(context).pushReplacementNamed('/home');
       } else {
@@ -62,16 +65,14 @@ class _SplashScreenState extends State<SplashScreen>
                 opacity: _logoAnimation,
                 child: Image(
                   image: AssetImage("images/logo.png"),
-                  width: MediaQuery.of(context).size.width *
-                      0.8, // Adjust the width as needed
-                  height: MediaQuery.of(context).size.height *
-                      0.3, // Adjust the height as needed
+                  width: MediaQuery.of(context).size.width * 0.8,
+                  height: MediaQuery.of(context).size.height * 0.3,
                 ),
               ),
             ),
             SizedBox(
               height: MediaQuery.of(context).size.height * 0.1,
-            ), // Add spacing between the logo and text
+            ),
             FadeTransition(
               opacity: _textOpacityAnimation,
               child: Column(
@@ -79,12 +80,10 @@ class _SplashScreenState extends State<SplashScreen>
                   Text(
                     "Track. Save. Thrive",
                     style: TextStyle(
-                      color: Color(0xFF6998AB), // Text colo
-                      // Text color
-                      fontSize: 18, // Text size
+                      color: Color(0xFF6998AB),
+                      fontSize: 18,
                       fontWeight: FontWeight.bold,
-
-                      decoration: TextDecoration.none, // Remove underline
+                      decoration: TextDecoration.none,
                     ),
                   ),
                 ],

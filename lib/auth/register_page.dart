@@ -1,8 +1,7 @@
-import 'package:envolet_frontend/Auth/login.dart';
-import 'package:envolet_frontend/Screens/HomePage.dart';
-import 'package:envolet_frontend/Services/api.dart';
-import 'package:envolet_frontend/Util/alart.dart';
-import 'package:envolet_frontend/Util/Helper/helper.dart';
+import 'package:envolet_frontend/auth/login_page.dart';
+import 'package:envolet_frontend/screens/home_page.dart';
+import 'package:envolet_frontend/services/api_service.dart';
+import 'package:envolet_frontend/utils/dialogs.dart';
 import 'package:flutter/material.dart';
 
 class RegisterPage extends StatefulWidget {
@@ -65,8 +64,8 @@ class _RegisterPageState extends State<RegisterPage> {
 
   @override
   Widget build(BuildContext context) {
-    final height = Helper().getDeviceHeight(context);
-    final width = Helper().getDeviceWidth(context);
+    final height = MediaQuery.sizeOf(context).height;
+    final width = MediaQuery.sizeOf(context).width;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -245,26 +244,27 @@ class _RegisterPageState extends State<RegisterPage> {
                     ? nameParts.sublist(0, nameParts.length - 1).join(' ')
                     : fullName;
 
-                final result = await Api.registerCall(
+                final result = await ApiService.registerCall(
                   email: email,
                   password: password,
                   name: name,
                   surname: surname,
                 );
 
+                if (!context.mounted) return;
                 if (result != null) {
                   _fullNameController.clear();
                   _emailController.clear();
                   _passwordController.clear();
                   _verifypasswordController.clear();
 
-                  Util.successAlertAndGoToPage(
+                  AppDialogs.successAlertAndGoToPage(
                     context,
                     "Your account has been created successfully!",
                     HomePage(),
                   );
                 } else {
-                  Util.errorAlertAndNavigate(
+                  AppDialogs.errorAlertAndNavigate(
                     context,
                     "Registration failed. Please try again.",
                     "Register Error",

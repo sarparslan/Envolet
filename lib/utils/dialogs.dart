@@ -1,13 +1,12 @@
-import 'package:envolet_frontend/Auth/login.dart';
-import 'package:envolet_frontend/Services/api.dart';
-import 'package:envolet_frontend/Util/globals.dart';
+import 'package:envolet_frontend/auth/login_page.dart';
+import 'package:envolet_frontend/services/api_service.dart';
+import 'package:envolet_frontend/utils/globals.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:quickalert/quickalert.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
-class Util {
+class AppDialogs {
   static void successAlertAndNavigate(BuildContext context, String title) {
     QuickAlert.show(
       context: context,
@@ -15,12 +14,12 @@ class Util {
       text: title,
       confirmBtnColor: Colors.green,
       confirmBtnText: "Success",
-    ).then((value) {
-      Navigator.of(context).pop();
+    ).then((_) {
+      if (context.mounted) Navigator.of(context).pop();
     });
   }
 
-  static void showSuccessAlertForCardUpdateaAdDelete(
+  static void showCardActionSuccess(
     BuildContext context,
     String message, {
     required VoidCallback onContinue,
@@ -59,7 +58,7 @@ class Util {
       confirmBtnText: "Ok",
       confirmBtnColor: const Color(0xFF2D6BFF),
       backgroundColor: Colors.white,
-      barrierColor: Colors.black.withOpacity(0.2),
+      barrierColor: Colors.black.withValues(alpha: 0.2),
       titleColor: Colors.black,
       textColor: Colors.black54,
       confirmBtnTextStyle: const TextStyle(
@@ -70,6 +69,7 @@ class Util {
       onConfirmBtnTap: () {
         Navigator.of(context).pop();
         Future.delayed(const Duration(milliseconds: 300), () {
+          if (!context.mounted) return;
           Navigator.of(context).pushReplacement(
             PageRouteBuilder(
               transitionDuration: const Duration(milliseconds: 600),
@@ -218,11 +218,10 @@ class Util {
                     minimumSize: const Size(double.infinity, 48),
                   ),
                   onPressed: () async {
-                    SharedPreferences pref =
-                        await SharedPreferences.getInstance();
-                    await pref.clear();
+                    await ApiService.logout();
+                    if (!context.mounted) return;
                     Navigator.of(context).pop();
-                    Util.navigateWithFade(context, LoginPage());
+                    AppDialogs.navigateWithFade(context, LoginPage());
                   },
                   child: const Text(
                     "Confirm",
@@ -317,9 +316,11 @@ class Util {
                       ElevatedButton(
                         onPressed: isConfirmed
                             ? () async {
-                                await Api.deleteAccount();
+                                await ApiService.deleteAccount();
+                                if (!context.mounted) return;
                                 Navigator.of(context).pop();
-                                Util.navigateWithFade(context, LoginPage());
+                                AppDialogs.navigateWithFade(
+                                    context, LoginPage());
                               }
                             : null,
                         style: ElevatedButton.styleFrom(
@@ -417,7 +418,7 @@ class Util {
           child: Container(
             color: Colors.transparent,
             child: GestureDetector(
-              onTap: () {}, // İç tıklamayı engelle
+              onTap: () {}, // Absorb taps so the sheet itself does not close
               child: Container(
                 decoration: const BoxDecoration(
                   color: Colors.white,
@@ -457,12 +458,12 @@ class Util {
                       style: TextStyle(fontSize: 14, color: Colors.black54),
                     ),
                     const SizedBox(height: 24),
-                    _SuccessInfoRow(
+                    _successInfoRow(
                         "Date", DateFormat('dd MMM, yyyy').format(date)),
                     const SizedBox(height: 12),
-                    _SuccessInfoRow("Category", category),
+                    _successInfoRow("Category", category),
                     const SizedBox(height: 12),
-                    _SuccessInfoRow(
+                    _successInfoRow(
                         "Amount", "${amount.toString()} $globalCurrency"),
                     const SizedBox(height: 12),
                   ],
@@ -493,7 +494,7 @@ class Util {
           child: Container(
             color: Colors.transparent,
             child: GestureDetector(
-              onTap: () {}, // İç tıklamayı engelle
+              onTap: () {}, // Absorb taps so the sheet itself does not close
               child: Container(
                 decoration: const BoxDecoration(
                   color: Colors.white,
@@ -533,12 +534,12 @@ class Util {
                       style: TextStyle(fontSize: 14, color: Colors.black54),
                     ),
                     const SizedBox(height: 24),
-                    _SuccessInfoRow(
+                    _successInfoRow(
                         "Date", DateFormat('dd MMM, yyyy').format(date)),
                     const SizedBox(height: 12),
-                    _SuccessInfoRow("Category", category),
+                    _successInfoRow("Category", category),
                     const SizedBox(height: 12),
-                    _SuccessInfoRow(
+                    _successInfoRow(
                         "Amount", "${amount.toString()} $globalCurrency"),
                     const SizedBox(height: 12),
                   ],
@@ -551,7 +552,7 @@ class Util {
     );
   }
 
-  static Widget _SuccessInfoRow(String label, String value,
+  static Widget _successInfoRow(String label, String value,
       {bool isCurrency = false}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,

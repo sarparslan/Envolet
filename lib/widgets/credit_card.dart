@@ -1,7 +1,7 @@
-import 'package:envolet_frontend/Util/globals.dart';
+import 'package:envolet_frontend/utils/globals.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:intl/intl.dart'; // NumberFormat için
+import 'package:intl/intl.dart';
 
 class CustomCreditCard extends StatelessWidget {
   final String cardTail; // Last 4 digits
@@ -13,7 +13,7 @@ class CustomCreditCard extends StatelessWidget {
   final String? currency;
 
   const CustomCreditCard({
-    Key? key,
+    super.key,
     required this.cardTail,
     required this.bankName,
     required this.balance,
@@ -21,12 +21,12 @@ class CustomCreditCard extends StatelessWidget {
     this.colorHex,
     this.cardBrand,
     this.currency,
-  }) : super(key: key);
+  });
 
   // Convert a hex string to Color
   Color _hexToColor(String hex) {
     hex = hex.replaceAll("#", "");
-    if (hex.length == 6) hex = "FF" + hex;
+    if (hex.length == 6) hex = "FF$hex";
     return Color(int.parse(hex, radix: 16));
   }
 
@@ -58,9 +58,7 @@ class CustomCreditCard extends StatelessWidget {
         (colorHex != null) ? _hexToColor(colorHex!) : Colors.black87;
     final icon = _getCardIcon(cardBrand);
 
-    // Değiştir: currencySymbol artık String olsun
-    final String currencySymbolString = currencySymbolMap[globalCurrency] ??
-        ''; // bu map global'de tanımlı olmalı
+    final String currencySymbolString = currencySymbolMap[globalCurrency] ?? '';
 
     // Format the balance with thousand separators
     String formattedBalance = balance;
@@ -68,7 +66,7 @@ class CustomCreditCard extends StatelessWidget {
       final num value = num.parse(balance);
       formattedBalance = NumberFormat('#,##0').format(value);
     } catch (e) {
-      // Eğer parse edilemezse, orijinal değeri kullanın
+      // Fall back to the raw value if it cannot be parsed
     }
 
     return Container(

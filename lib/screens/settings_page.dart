@@ -1,8 +1,8 @@
-import 'package:envolet_frontend/Util/alart.dart';
+import 'package:envolet_frontend/utils/dialogs.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:envolet_frontend/Util/Widgets/bottomBarWidget.dart';
-import 'package:envolet_frontend/Util/globals.dart';
+import 'package:envolet_frontend/widgets/bottom_nav_bar.dart';
+import 'package:envolet_frontend/utils/globals.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -133,7 +133,7 @@ class _SettingsPageState extends State<SettingsPage> {
             _SectionHeader("Account Info", Colors.black),
             _SettingsTileNoArrow(
                 title: "Name",
-                value: (userName.toString() + " " + userSurname.toString()),
+                value: ("$userName $userSurname"),
                 textColor: Colors.black),
             _SettingsTileNoArrow(
                 title: "Email",
@@ -181,7 +181,7 @@ class _SettingsPageState extends State<SettingsPage> {
       ),
       bottomNavigationBar: Padding(
         padding: EdgeInsets.only(bottom: height * 0.03),
-        child: BottomNavBarWidget(currentPage: Pages.SettingsPage),
+        child: BottomNavBarWidget(currentPage: Pages.settings),
       ),
     );
   }
@@ -190,7 +190,7 @@ class _SettingsPageState extends State<SettingsPage> {
     return ListTile(
       leading: Icon(Icons.logout, color: Colors.black),
       title: Text("Log Out", style: TextStyle(color: Colors.black)),
-      onTap: () => Util.showLogoutDialog(context),
+      onTap: () => AppDialogs.showLogoutDialog(context),
     );
   }
 
@@ -198,7 +198,7 @@ class _SettingsPageState extends State<SettingsPage> {
     return ListTile(
       leading: const Icon(Icons.delete_outline, color: Colors.red),
       title: const Text("Delete Account", style: TextStyle(color: Colors.red)),
-      onTap: () => Util.showDeleteAccountDialog(context),
+      onTap: () => AppDialogs.showDeleteAccountDialog(context),
     );
   }
 }

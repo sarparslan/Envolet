@@ -1,9 +1,9 @@
-import 'package:envolet_frontend/Services/api.dart';
-import 'package:envolet_frontend/Util/alart.dart';
-import 'package:envolet_frontend/Util/globals.dart';
-import 'package:envolet_frontend/Util/Widgets/CardAdditionWidget.dart';
-import 'package:envolet_frontend/Util/Widgets/CreditCard.dart';
-import 'package:envolet_frontend/Util/Widgets/bottomBarWidget.dart';
+import 'package:envolet_frontend/services/api_service.dart';
+import 'package:envolet_frontend/utils/dialogs.dart';
+import 'package:envolet_frontend/utils/globals.dart';
+import 'package:envolet_frontend/widgets/card_addition_dialog.dart';
+import 'package:envolet_frontend/widgets/credit_card.dart';
+import 'package:envolet_frontend/widgets/bottom_nav_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:dotted_border/dotted_border.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -35,11 +35,12 @@ class _HomePageState extends State<HomePage> {
     await _fetchUserEmail();
     await _fetchLatestTransactions();
     await _fetchAssets();
+    if (!mounted) return;
     setState(() => isLoading = false);
   }
 
   Future<void> _fetchUserEmail() async {
-    final user = await Api.getMe();
+    final user = await ApiService.getMe();
     if (user != null && mounted) {
       setState(() {
         userEmail = user['email'];
@@ -56,15 +57,17 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _fetchLatestTransactions() async {
-    final transactions = await Api.getTransactions();
+    final transactions = await ApiService.getTransactions();
     transactions.sort((a, b) => b["date"].compareTo(a["date"]));
+    if (!mounted) return;
     setState(() {
       latestTransactions = transactions.take(3).toList();
     });
   }
 
   Future<void> _fetchAssets() async {
-    final assets = await Api.getAssets();
+    final assets = await ApiService.getAssets();
+    if (!mounted) return;
     setState(() {
       cards = List.from(assets.reversed);
     });
@@ -114,7 +117,7 @@ class _HomePageState extends State<HomePage> {
         padding: EdgeInsets.only(
           bottom: MediaQuery.of(context).size.height * 0.03,
         ),
-        child: BottomNavBarWidget(currentPage: Pages.HomePage),
+        child: BottomNavBarWidget(currentPage: Pages.home),
       ),
     );
   }
@@ -123,7 +126,7 @@ class _HomePageState extends State<HomePage> {
     return Row(
       children: [
         Text(
-          ("Welcome, " + (userName.toString() + " " + userSurname.toString())),
+          ("Welcome, $userName $userSurname"),
           style: TextStyle(
             fontSize: 17,
             fontWeight: FontWeight.bold,
@@ -216,7 +219,7 @@ class _HomePageState extends State<HomePage> {
   Widget cardRow() {
     return Column(
       children: [
-        Container(
+        SizedBox(
           height: 240,
           width: 800,
           child: PageView.builder(
@@ -237,24 +240,26 @@ class _HomePageState extends State<HomePage> {
                         final amountInt =
                             int.tryParse(newCard['balance'] ?? '0') ?? 0;
 
-                        final createdAsset = await Api.addAsset(
+                        final createdAsset = await ApiService.addAsset(
                           bankName: newCard['bankName']!,
                           amount: amountInt,
                           lastFourDigits: newCard['cardTail']!,
                           brand: newCard['cardBrand']!,
                           color: newCard['color']!,
                         );
+                        if (!context.mounted) return;
 
                         if (createdAsset != null) {
                           await _fetchAssets();
+                          if (!context.mounted) return;
 
-                          Util.showSuccessAlertForCardUpdateaAdDelete(
+                          AppDialogs.showCardActionSuccess(
                             context,
                             "Your card was successfully added.",
                             onContinue: () {},
                           );
                         } else {
-                          Util.errorAlertAndNavigate(
+                          AppDialogs.errorAlertAndNavigate(
                             context,
                             "Something went wrong while adding the card.",
                             "Error",
@@ -311,10 +316,11 @@ class _HomePageState extends State<HomePage> {
 
                         if (result != null) {
                           if (result['delete'] == 'true') {
-                            await Api.deleteAsset(card['_id']);
+                            await ApiService.deleteAsset(card['_id']);
                             await _fetchAssets();
+                            if (!context.mounted) return;
 
-                            Util.showSuccessAlertForCardUpdateaAdDelete(
+                            AppDialogs.showCardActionSuccess(
                               context,
                               "Your card was successfully deleted.",
                               onContinue: () {},
@@ -324,6 +330,7 @@ class _HomePageState extends State<HomePage> {
 
                           if (result['updated'] == 'true') {
                             await _fetchAssets();
+                            if (!context.mounted) return;
                           }
                         }
                       }),

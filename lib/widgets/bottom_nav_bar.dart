@@ -1,29 +1,29 @@
 import 'dart:ui';
 import 'dart:io';
-import 'package:envolet_frontend/Screens/HomePage.dart';
+import 'package:envolet_frontend/screens/home_page.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:envolet_frontend/Screens/SettingsPage.dart';
-import 'package:envolet_frontend/Screens/TransactionPage.dart';
-import 'package:envolet_frontend/Screens/TrackerPage.dart';
+import 'package:envolet_frontend/screens/settings_page.dart';
+import 'package:envolet_frontend/screens/transaction_page.dart';
+import 'package:envolet_frontend/screens/tracker_page.dart';
 
 enum Pages {
-  SettingsPage,
-  TransactionPage,
-  TrackerPage,
-  HomePage,
+  settings,
+  transaction,
+  tracker,
+  home,
 }
 
 class BottomNavBarWidget extends StatelessWidget {
   final Pages currentPage;
 
-  BottomNavBarWidget({required this.currentPage, Key? key}) : super(key: key);
+  const BottomNavBarWidget({required this.currentPage, super.key});
 
   @override
   Widget build(BuildContext context) {
     final navColors = {
-      "backgroundColor": Colors.white.withOpacity(0.2),
-      "borderColor": Colors.white.withOpacity(0.3),
+      "backgroundColor": Colors.white.withValues(alpha: 0.2),
+      "borderColor": Colors.white.withValues(alpha: 0.3),
       "iconColor": Colors.black,
       "activeColor": Colors.blue,
     };
@@ -50,14 +50,14 @@ class BottomNavBarWidget extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _buildNavItem(Icons.home, "Home", Pages.HomePage, iconSize,
-                  context, navColors),
-              _buildNavItem(Icons.bar_chart, "Insights", Pages.TrackerPage,
+              _buildNavItem(
+                  Icons.home, "Home", Pages.home, iconSize, context, navColors),
+              _buildNavItem(Icons.bar_chart, "Insights", Pages.tracker,
                   iconSize, context, navColors),
               _buildNavItem(FontAwesomeIcons.moneyBillTransfer, "Transaction",
-                  Pages.TransactionPage, iconSize, context, navColors),
-              _buildNavItem(FontAwesomeIcons.gear, "Settings",
-                  Pages.SettingsPage, iconSize, context, navColors),
+                  Pages.transaction, iconSize, context, navColors),
+              _buildNavItem(FontAwesomeIcons.gear, "Settings", Pages.settings,
+                  iconSize, context, navColors),
             ],
           ),
         ),
@@ -74,14 +74,14 @@ class BottomNavBarWidget extends StatelessWidget {
           Navigator.of(context).push(PageRouteBuilder(
             pageBuilder: (_, __, ___) {
               switch (page) {
-                case Pages.HomePage:
+                case Pages.home:
                   return HomePage();
-                case Pages.TrackerPage:
+                case Pages.tracker:
                   return TrackerPage();
 
-                case Pages.TransactionPage:
+                case Pages.transaction:
                   return TransactionPage();
-                case Pages.SettingsPage:
+                case Pages.settings:
                   return SettingsPage();
               }
             },

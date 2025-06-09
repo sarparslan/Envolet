@@ -1,18 +1,18 @@
-import 'package:envolet_frontend/Services/api.dart';
-import 'package:envolet_frontend/Util/alart.dart';
-import 'package:envolet_frontend/Util/globals.dart';
+import 'package:envolet_frontend/services/api_service.dart';
+import 'package:envolet_frontend/utils/dialogs.dart';
+import 'package:envolet_frontend/utils/globals.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:envolet_frontend/Util/Helper/ThousandsFormatter.dart';
+import 'package:envolet_frontend/utils/thousands_formatter.dart';
 
 class CardAdditionDialog extends StatefulWidget {
   final Map<String, String>? initialData;
 
-  const CardAdditionDialog({Key? key, this.initialData}) : super(key: key);
+  const CardAdditionDialog({super.key, this.initialData});
 
   @override
-  _CardAdditionDialogState createState() => _CardAdditionDialogState();
+  State<CardAdditionDialog> createState() => _CardAdditionDialogState();
 }
 
 class _CardAdditionDialogState extends State<CardAdditionDialog> {
@@ -80,7 +80,8 @@ class _CardAdditionDialogState extends State<CardAdditionDialog> {
     if (widget.initialData != null &&
         widget.initialData!.containsKey('color')) {
       final Color chosenColor = _hexToColor(widget.initialData!['color']!);
-      int index = _colorOptions.indexWhere((c) => c.value == chosenColor.value);
+      int index = _colorOptions
+          .indexWhere((c) => c.toARGB32() == chosenColor.toARGB32());
       if (index != -1) {
         _cardColor = _colorOptions[index];
       } else {
@@ -93,12 +94,12 @@ class _CardAdditionDialogState extends State<CardAdditionDialog> {
 
   Color _hexToColor(String hex) {
     hex = hex.replaceAll("#", "");
-    if (hex.length == 6) hex = "FF" + hex;
+    if (hex.length == 6) hex = "FF$hex";
     return Color(int.parse(hex, radix: 16));
   }
 
   String _colorToHex(Color color) =>
-      '#${color.value.toRadixString(16).substring(2).toUpperCase()}';
+      '#${color.toARGB32().toRadixString(16).substring(2).toUpperCase()}';
 
   void _saveCard() async {
     if (_formKey.currentState?.validate() ?? false) {
@@ -111,7 +112,7 @@ class _CardAdditionDialogState extends State<CardAdditionDialog> {
       final bool isUpdate = widget.initialData?['_id'] != null;
 
       if (isUpdate) {
-        final success = await Api.updateAsset(
+        final success = await ApiService.updateAsset(
           id: widget.initialData!['_id']!,
           bankName: _bankName,
           amount: amountInt,
@@ -120,8 +121,9 @@ class _CardAdditionDialogState extends State<CardAdditionDialog> {
           color: colorHex,
         );
 
+        if (!mounted) return;
         if (success) {
-          Util.showSuccessAlertForCardUpdateaAdDelete(
+          AppDialogs.showCardActionSuccess(
             context,
             "Your card was successfully updated.",
             onContinue: () {
@@ -175,6 +177,7 @@ class _CardAdditionDialogState extends State<CardAdditionDialog> {
         ) ??
         false;
 
+    if (!mounted) return;
     if (confirm) {
       Navigator.of(context).pop({'delete': 'true'});
     }
@@ -184,8 +187,8 @@ class _CardAdditionDialogState extends State<CardAdditionDialog> {
   Widget build(BuildContext context) {
     return Theme(
       data: Theme.of(context).copyWith(
-        highlightColor: Colors.blue.withOpacity(0.3),
-        splashColor: Colors.blue.withOpacity(0.2),
+        highlightColor: Colors.blue.withValues(alpha: 0.3),
+        splashColor: Colors.blue.withValues(alpha: 0.2),
         focusColor: Colors.blue,
         colorScheme: ColorScheme.fromSwatch().copyWith(
           primary: Colors.blue,
@@ -220,7 +223,7 @@ class _CardAdditionDialogState extends State<CardAdditionDialog> {
                 SizedBox(height: 8),
 
                 _buildTextField(
-                  label: 'Amount (${globalCurrency ?? ''})',
+                  label: 'Amount ($globalCurrency)',
                   initialValue: _amount,
                   onSaved: (val) => _amount = val!,
                   validator: (val) {
@@ -356,7 +359,7 @@ class _CardAdditionDialogState extends State<CardAdditionDialog> {
         showModalBottomSheet(
           context: context,
           builder: (_) {
-            return Container(
+            return SizedBox(
               height: 250,
               child: CupertinoPicker(
                 backgroundColor: Colors.white,
@@ -404,7 +407,7 @@ class _CardAdditionDialogState extends State<CardAdditionDialog> {
         showModalBottomSheet(
           context: context,
           builder: (_) {
-            return Container(
+            return SizedBox(
               height: 250,
               child: CupertinoPicker(
                 backgroundColor: Colors.white,

@@ -1,9 +1,9 @@
-import 'package:envolet_frontend/Services/api.dart';
-import 'package:envolet_frontend/Util/globals.dart';
+import 'package:envolet_frontend/services/api_service.dart';
+import 'package:envolet_frontend/utils/globals.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
-import 'package:envolet_frontend/Util/Widgets/bottomBarWidget.dart';
+import 'package:envolet_frontend/widgets/bottom_nav_bar.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import 'package:month_picker_dialog/month_picker_dialog.dart';
@@ -17,37 +17,15 @@ class TrackerPage extends StatefulWidget {
 
 class _TrackerPageState extends State<TrackerPage>
     with SingleTickerProviderStateMixin {
-  @override
   late TabController _tabController;
   String _selectedDate = DateFormat.yMMM().format(DateTime.now());
   List<FlSpot> selectedMonthSpots = [];
   List<FlSpot> generalAverageSpots = [];
-  final transactions = Api.getTransactions();
+  final transactions = ApiService.getTransactions();
   String _selectedCategory = 'General';
   List<Map<String, dynamic>> categorySummary = [];
 
   late String envoletAiSuggestionText = "";
-
-  bool _aiSuggestionVisible = false;
-
-  String getCurrencySymbol(String currency) {
-    switch (currency) {
-      case 'USD':
-        return '\$';
-      case 'EUR':
-        return '€';
-      case 'GBP':
-        return '£';
-      case 'JPY':
-        return '¥';
-      case 'TL':
-        return '₺';
-      case 'CHF':
-        return '₣';
-      default:
-        return '\$';
-    }
-  }
 
   void _talkToAi() async {
     setState(() {
@@ -79,26 +57,13 @@ Based on this, briefly suggest a friendly, actionable, and sustainable way they 
 Keep the response short and clear — strictly no more than 3 sentences. Avoid numeric advice. Focus on helpful habits like cooking at home, using public transport, or spending more time in nature.
 """;
 
-    print("🧠 [AI INPUT]: $userInput");
+    final response = await ApiService.getOpenRouterResponse(userInput);
+    if (!mounted) return;
 
-    final response = await Api.getOpenRouterResponse(userInput);
-
-    if (response != null) {
-      print("✅ [AI RESPONSE]: $response");
-      setState(() {
-        envoletAiSuggestionText = response.toString();
-        _aiSuggestionVisible = true;
-      });
-    } else {
-      print("❌ [AI ERROR]: Response is null");
-      setState(() {
-        envoletAiSuggestionText =
-            "Could not get response from AI. Please try again";
-        setState(() {
-          _aiSuggestionVisible = false;
-        });
-      });
-    }
+    setState(() {
+      envoletAiSuggestionText =
+          response ?? "Could not get response from AI. Please try again";
+    });
   }
 
   @override
@@ -133,7 +98,8 @@ Keep the response short and clear — strictly no more than 3 sentences. Avoid n
   Future<void> _fetchChartData() async {
     final selectedMonthDate = DateFormat.yMMM().parse(_selectedDate);
     final formattedMonth = DateFormat('yyyy-MM').format(selectedMonthDate);
-    final overview = await Api.getMonthlyCategoryPercentages(formattedMonth);
+    final overview =
+        await ApiService.getMonthlyCategoryPercentages(formattedMonth);
 
     setState(() {
       categorySummary = overview;
@@ -143,12 +109,13 @@ Keep the response short and clear — strictly no more than 3 sentences. Avoid n
     List<double> averageBuckets = [];
 
     if (_selectedCategory == 'General') {
-      selectedMonthBuckets = await Api.getGeneralBucketsByMonth(formattedMonth);
-      averageBuckets = await Api.getGeneralBuckets();
+      selectedMonthBuckets =
+          await ApiService.getGeneralBucketsByMonth(formattedMonth);
+      averageBuckets = await ApiService.getGeneralBuckets();
     } else {
-      selectedMonthBuckets = await Api.getCategoryBucketsByMonth(
+      selectedMonthBuckets = await ApiService.getCategoryBucketsByMonth(
           _selectedCategory, formattedMonth);
-      averageBuckets = await Api.getCategoryBuckets(_selectedCategory);
+      averageBuckets = await ApiService.getCategoryBuckets(_selectedCategory);
     }
 
     final selectedSpots = selectedMonthBuckets.asMap().entries.map((entry) {
@@ -198,7 +165,7 @@ Keep the response short and clear — strictly no more than 3 sentences. Avoid n
         padding: EdgeInsets.only(
           bottom: MediaQuery.of(context).size.height * 0.03,
         ),
-        child: BottomNavBarWidget(currentPage: Pages.TrackerPage),
+        child: BottomNavBarWidget(currentPage: Pages.tracker),
       ),
     );
   }
@@ -222,7 +189,8 @@ Keep the response short and clear — strictly no more than 3 sentences. Avoid n
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: const BorderRadius.all(Radius.circular(5)),
-              border: Border.all(color: Colors.grey.withOpacity(0.4), width: 1),
+              border: Border.all(
+                  color: Colors.grey.withValues(alpha: 0.4), width: 1),
             ),
             child: Row(
               children: [
@@ -378,11 +346,11 @@ Keep the response short and clear — strictly no more than 3 sentences. Avoid n
           onTap: _showCategoryPicker,
           child: Container(
             height: 50,
-            width: 100, // Sabit genişlik
+            width: 100,
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
               color: Colors.white,
-              border: Border.all(color: Colors.grey.withOpacity(0.4)),
+              border: Border.all(color: Colors.grey.withValues(alpha: 0.4)),
               borderRadius: BorderRadius.circular(5),
             ),
             child: Row(
@@ -445,7 +413,7 @@ Keep the response short and clear — strictly no more than 3 sentences. Avoid n
                           isIncome ? Colors.blue.shade900 : Colors.cyan;
 
                       return LineTooltipItem(
-                        '$label: ${spot.y.toInt()}${getCurrencySymbol(globalCurrency)}',
+                        '$label: ${spot.y.toInt()}${currencySymbolMap[globalCurrency] ?? ''}',
                         TextStyle(
                           color: color,
                           fontWeight: FontWeight.bold,
@@ -460,7 +428,7 @@ Keep the response short and clear — strictly no more than 3 sentences. Avoid n
                 show: true,
                 drawVerticalLine: true,
                 getDrawingHorizontalLine: (value) => FlLine(
-                  color: Colors.grey.withOpacity(0.2),
+                  color: Colors.grey.withValues(alpha: 0.2),
                   strokeWidth: 1,
                 ),
               ),
@@ -505,7 +473,7 @@ Keep the response short and clear — strictly no more than 3 sentences. Avoid n
               ),
               borderData: FlBorderData(
                 show: true,
-                border: Border.all(color: Colors.grey.withOpacity(0.3)),
+                border: Border.all(color: Colors.grey.withValues(alpha: 0.3)),
               ),
               minX: 0,
               maxX: 4,
