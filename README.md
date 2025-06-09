@@ -69,31 +69,58 @@
   <img src="https://github.com/user-attachments/assets/85b0169e-2fd2-4dbd-bff3-ad10de1450f1" width="250"/>
 </p>
 
+---
 
+## 🛠 Tech Stack
+
+- **Flutter / Dart** for the cross-platform mobile client
+- **REST API** backend with token-based authentication
+- **OpenRouter** (Gemini 2.0 Flash) for AI spending suggestions
+- **fl_chart** for line and pie charts
+- **shared_preferences** for session and user preferences
+
+## 📂 Project Structure
+
+```
+lib/
+├── auth/        # Login and registration screens
+├── models/      # API response models
+├── screens/     # Home, Tracker, Transactions, Settings
+├── services/    # ApiService – all backend and AI calls
+├── utils/       # Globals, dialogs, input formatters
+├── widgets/     # Reusable UI components (cards, nav bar, splash)
+└── main.dart
+test/            # Unit tests
+```
 
 ## 🚀 Getting Started
 
-To run the project locally:
+**Prerequisites:** Flutter SDK (3.x) and a running instance of the Envolet backend API.
 
 ```bash
-git clone https://github.com/sarparslan/Envolet
-cd envolet
+git clone https://github.com/sarparslan/Envolet.git
+cd Envolet
 flutter pub get
-flutter run
 ```
 
 ## ⚙️ Configuration
 
-Before running the app, update the following files to match your environment:
+The backend URL and the OpenRouter API key are provided at build time via `--dart-define`, so no secrets are stored in the source code:
 
-Set the backend base URL in lib/Services/api.dart:
+| Variable             | Description                        | Default                 |
+| -------------------- | ---------------------------------- | ----------------------- |
+| `API_BASE_URL`       | Base URL of the Envolet backend    | `http://localhost:5001` |
+| `OPENROUTER_API_KEY` | API key used for AI suggestions    | _(empty)_               |
 
-```dart
-static final String baseUrl = "YOUR_URL";
+```bash
+flutter run \
+  --dart-define=API_BASE_URL=http://localhost:5001 \
+  --dart-define=OPENROUTER_API_KEY=your_openrouter_key
 ```
 
-Set your API key for using AI in lib/Util/globals.dart:
+## 🧪 Running Tests
 
-```dart
-final String apiKey = "YOUR_API_KEY";
+```bash
+flutter analyze
+flutter test
 ```
