@@ -1,12 +1,18 @@
+import 'package:envolet_frontend/core/constants.dart';
+import 'package:envolet_frontend/models/category_share.dart';
+import 'package:envolet_frontend/providers/settings_provider.dart';
 import 'package:envolet_frontend/services/api_service.dart';
-import 'package:envolet_frontend/utils/globals.dart';
+import 'package:envolet_frontend/widgets/bottom_nav_bar.dart';
+import 'package:envolet_frontend/widgets/tracker/ai_suggestion_card.dart';
+import 'package:envolet_frontend/widgets/tracker/category_pie_chart.dart';
+import 'package:envolet_frontend/widgets/tracker/spending_line_chart.dart';
+import 'package:envolet_frontend/widgets/tracker/spending_summary.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-
-import 'package:envolet_frontend/widgets/bottom_nav_bar.dart';
-import 'package:fl_chart/fl_chart.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:month_picker_dialog/month_picker_dialog.dart';
+import 'package:provider/provider.dart';
 
 class TrackerPage extends StatefulWidget {
   const TrackerPage({super.key});
@@ -17,60 +23,35 @@ class TrackerPage extends StatefulWidget {
 
 class _TrackerPageState extends State<TrackerPage>
     with SingleTickerProviderStateMixin {
-  late TabController _tabController;
-  String _selectedDate = DateFormat.yMMM().format(DateTime.now());
-  List<FlSpot> selectedMonthSpots = [];
-  List<FlSpot> generalAverageSpots = [];
-  final transactions = ApiService.getTransactions();
-  String _selectedCategory = 'General';
-  List<Map<String, dynamic>> categorySummary = [];
+  static final DateFormat _monthLabelFormat = DateFormat.yMMM();
+  static final DateFormat _monthApiFormat = DateFormat('yyyy-MM');
 
-  late String envoletAiSuggestionText = "";
+  late final TabController _tabController =
+      TabController(length: 2, vsync: this);
+  late final ApiService _api = context.read<ApiService>();
 
-  void _talkToAi() async {
-    setState(() {
-      envoletAiSuggestionText = "Fetching response...";
-    });
+  DateTime _selectedMonth = DateTime.now();
+  String _selectedCategory = generalCategory;
 
-    final selectedMonthAvg = selectedMonthSpots.isNotEmpty
-        ? (selectedMonthSpots.map((e) => e.y).reduce((a, b) => a + b) /
-                selectedMonthSpots.length)
-            .toInt()
-        : 0;
+  List<double> _monthBuckets = [];
+  List<double> _averageBuckets = [];
+  List<CategoryShare> _categoryShares = [];
 
-    final generalAvg = generalAverageSpots.isNotEmpty
-        ? (generalAverageSpots.map((e) => e.y).reduce((a, b) => a + b) /
-                generalAverageSpots.length)
-            .toInt()
-        : 0;
+  String _suggestion = '';
+  bool _isSuggestionLoading = false;
 
-    final category = _selectedCategory;
-    final month = _selectedDate;
+  /// Incremented on every reload so stale responses can be ignored.
+  int _requestId = 0;
 
-    final userInput = """
-The user selected the category: $category for the month: $month.
+  double get _monthTotal => _monthBuckets.fold(0, (sum, v) => sum + v);
+  double get _monthlyAverage => _averageBuckets.fold(0, (sum, v) => sum + v);
 
-Their average spending this month is \$$selectedMonthAvg, while their overall average is \$$generalAvg.
-
-Based on this, briefly suggest a friendly, actionable, and sustainable way they can reduce or improve spending in this category.
-
-Keep the response short and clear — strictly no more than 3 sentences. Avoid numeric advice. Focus on helpful habits like cooking at home, using public transport, or spending more time in nature.
-""";
-
-    final response = await ApiService.getOpenRouterResponse(userInput);
-    if (!mounted) return;
-
-    setState(() {
-      envoletAiSuggestionText =
-          response ?? "Could not get response from AI. Please try again";
-    });
-  }
+  String get _monthLabel => _monthLabelFormat.format(_selectedMonth);
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
-    _fetchChartData();
+    _loadData();
   }
 
   @override
@@ -79,556 +60,240 @@ Keep the response short and clear — strictly no more than 3 sentences. Avoid n
     super.dispose();
   }
 
-  void _showDatePicker() async {
-    final picked = await showMonthPicker(
-      context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2100),
-    );
+  Future<void> _loadData() async {
+    final requestId = ++_requestId;
+    final month = _monthApiFormat.format(_selectedMonth);
+    final category =
+        _selectedCategory == generalCategory ? null : _selectedCategory;
 
-    if (picked != null) {
+    try {
+      final results = await Future.wait([
+        _api.getMonthBuckets(month, category: category),
+        _api.getAverageBuckets(category: category),
+        _api.getCategoryShares(month),
+      ]);
+      if (!mounted || requestId != _requestId) return;
+
       setState(() {
-        _selectedDate = DateFormat.yMMM().format(picked);
+        _monthBuckets = results[0] as List<double>;
+        _averageBuckets = results[1] as List<double>;
+        _categoryShares = results[2] as List<CategoryShare>;
       });
-      _fetchChartData();
+      await _loadSuggestion(requestId);
+    } on ApiException catch (e) {
+      if (!mounted || requestId != _requestId) return;
+      setState(() => _suggestion = e.message);
     }
   }
 
-  Future<void> _fetchChartData() async {
-    final selectedMonthDate = DateFormat.yMMM().parse(_selectedDate);
-    final formattedMonth = DateFormat('yyyy-MM').format(selectedMonthDate);
-    final overview =
-        await ApiService.getMonthlyCategoryPercentages(formattedMonth);
+  Future<void> _loadSuggestion(int requestId) async {
+    setState(() => _isSuggestionLoading = true);
 
-    setState(() {
-      categorySummary = overview;
-    });
-
-    List<double> selectedMonthBuckets = [];
-    List<double> averageBuckets = [];
-
-    if (_selectedCategory == 'General') {
-      selectedMonthBuckets =
-          await ApiService.getGeneralBucketsByMonth(formattedMonth);
-      averageBuckets = await ApiService.getGeneralBuckets();
-    } else {
-      selectedMonthBuckets = await ApiService.getCategoryBucketsByMonth(
-          _selectedCategory, formattedMonth);
-      averageBuckets = await ApiService.getCategoryBuckets(_selectedCategory);
+    String suggestion;
+    try {
+      suggestion = await _api.getSpendingSuggestion(
+        category: _selectedCategory,
+        month: _monthLabel,
+        monthTotal: _monthTotal,
+        monthlyAverage: _monthlyAverage,
+        currency: context.read<SettingsProvider>().currency,
+      );
+    } on ApiException catch (e) {
+      suggestion = e.statusCode == 503
+          ? 'AI suggestions are not configured on the server yet.'
+          : 'Could not get a response from Envolet AI. Please try again later.';
     }
 
-    final selectedSpots = selectedMonthBuckets.asMap().entries.map((entry) {
-      final index = entry.key;
-      final value = entry.value;
-      return FlSpot(index.toDouble(), value);
-    }).toList();
-
-    final averageSpots = averageBuckets.asMap().entries.map((entry) {
-      final index = entry.key;
-      final value = entry.value;
-      return FlSpot(index.toDouble(), value);
-    }).toList();
-
+    if (!mounted || requestId != _requestId) return;
     setState(() {
-      selectedMonthSpots = selectedSpots;
-      generalAverageSpots = averageSpots;
+      _suggestion = suggestion;
+      _isSuggestionLoading = false;
     });
-    _talkToAi();
+  }
+
+  Future<void> _pickMonth() async {
+    final picked = await showMonthPicker(
+      context: context,
+      initialDate: _selectedMonth,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2100),
+    );
+    if (picked == null) return;
+
+    setState(() => _selectedMonth = picked);
+    _loadData();
+  }
+
+  Future<void> _pickCategory() async {
+    var selected = _selectedCategory;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.white,
+      builder: (_) => SizedBox(
+        height: 250,
+        child: CupertinoPicker(
+          backgroundColor: Colors.white,
+          itemExtent: 32,
+          scrollController: FixedExtentScrollController(
+            initialItem: analysisCategories.indexOf(selected),
+          ),
+          onSelectedItemChanged: (index) =>
+              selected = analysisCategories[index],
+          children:
+              analysisCategories.map((c) => Center(child: Text(c))).toList(),
+        ),
+      ),
+    );
+
+    // Reload once the picker is closed instead of on every scroll step.
+    if (!mounted || selected == _selectedCategory) return;
+    setState(() => _selectedCategory = selected);
+    _loadData();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      body: Padding(
-        padding: const EdgeInsets.only(top: 20, left: 20, right: 20),
-        child: Column(
-          children: [
-            const SizedBox(height: 50),
-            _trackerHeader(),
-            const SizedBox(height: 10),
-            _tabBar(),
-            Expanded(
-              child: TabBarView(
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 30, 20, 0),
+          child: Column(
+            children: [
+              _buildHeader(),
+              const SizedBox(height: 10),
+              TabBar(
                 controller: _tabController,
-                children: [
-                  _transactionsTab(),
-                  _analyticTab(),
-                ],
+                labelColor: Colors.black,
+                unselectedLabelColor: Colors.grey,
+                indicatorColor: Colors.blue,
+                indicatorWeight: 3,
+                tabs: const [Tab(text: 'Transactions'), Tab(text: 'Analytic')],
               ),
-            ),
-          ],
+              Expanded(
+                child: TabBarView(
+                  controller: _tabController,
+                  children: [
+                    _buildOverviewTab(),
+                    CategoryPieChart(shares: _categoryShares),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
-      bottomNavigationBar: Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).size.height * 0.03,
-        ),
-        child: BottomNavBarWidget(currentPage: Pages.tracker),
-      ),
+      bottomNavigationBar: const BottomNavBarWidget(currentPage: Pages.tracker),
     );
   }
 
-  Widget _trackerHeader() {
+  Widget _buildHeader() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Row(
+        const Row(
           children: [
-            const Icon(Icons.wallet, color: Colors.blue),
-            const SizedBox(width: 8),
-            const Text('Tracker', style: TextStyle(fontSize: 16)),
-            const SizedBox(width: 12),
+            Icon(Icons.wallet, color: Colors.blue),
+            SizedBox(width: 8),
+            Text('Tracker', style: TextStyle(fontSize: 16)),
           ],
         ),
-        GestureDetector(
-          onTap: _showDatePicker,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: const BorderRadius.all(Radius.circular(5)),
-              border: Border.all(
-                  color: Colors.grey.withValues(alpha: 0.4), width: 1),
-            ),
-            child: Row(
-              children: [
-                Text(
-                  _selectedDate,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.normal,
-                    color: Colors.black87,
-                  ),
-                ),
-                const Icon(Icons.arrow_drop_down, color: Colors.black87),
-              ],
-            ),
-          ),
-        ),
+        _DropdownButton(label: _monthLabel, onTap: _pickMonth),
       ],
     );
   }
 
-  void _showCategoryPicker() {
-    showModalBottomSheet(
-      context: context,
-      builder: (_) {
-        return SizedBox(
-          height: 250,
-          child: CupertinoPicker(
-            backgroundColor: Colors.white,
-            itemExtent: 32.0,
-            scrollController: FixedExtentScrollController(
-              initialItem: categoriesForAnalysis.indexOf(_selectedCategory),
-            ),
-            onSelectedItemChanged: (int index) {
-              setState(() {
-                _selectedCategory = categoriesForAnalysis[index];
-              });
-              _fetchChartData();
-            },
-            children: categoriesForAnalysis.map((e) => Text(e)).toList(),
-          ),
-        );
-      },
-    );
-  }
+  Widget _buildOverviewTab() {
+    final settings = context.watch<SettingsProvider>();
+    final currencyIcon =
+        currencyIcons[settings.currency] ?? FontAwesomeIcons.moneyBillWave;
 
-  Widget _tabBar() {
-    return TabBar(
-      controller: _tabController,
-      labelColor: Colors.blue,
-      unselectedLabelColor: Colors.grey,
-      indicatorColor: Colors.blue,
-      indicatorWeight: 3,
-      tabs: const [
-        Tab(child: Text("Transactions", style: TextStyle(color: Colors.black))),
-        Tab(child: Text("Analytic", style: TextStyle(color: Colors.black))),
-      ],
-    );
-  }
-
-  Widget _transactionsTab() {
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _incomeSpendingRow(),
+          Row(
+            children: [
+              SpendingSummaryItem(
+                label: 'Average',
+                amount: _monthlyAverage,
+                color: SpendingLineChart.averageColor,
+                currencyIcon: currencyIcon,
+              ),
+              const SizedBox(width: 24),
+              SpendingSummaryItem(
+                label: _monthLabel,
+                amount: _monthTotal,
+                color: SpendingLineChart.monthColor,
+                currencyIcon: currencyIcon,
+              ),
+              const Spacer(),
+              _DropdownButton(
+                label: _selectedCategory,
+                onTap: _pickCategory,
+                width: 110,
+                fontSize: 11,
+              ),
+            ],
+          ),
           const SizedBox(height: 16),
-          _lineChartCard(),
+          SpendingLineChart(
+            monthBuckets: _monthBuckets,
+            averageBuckets: _averageBuckets,
+            currencySymbol: settings.currencySymbol,
+          ),
           const SizedBox(height: 30),
-          _aiSuggestionCard(envoletAiSuggestionText.toString()),
-        ],
-      ),
-    );
-  }
-
-  Widget _incomeSpendingRow() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.start,
-      children: [
-        // General Average
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Row(
-              children: [
-                Container(width: 4, height: 16, color: Colors.blue.shade900),
-                const SizedBox(width: 6),
-                const Text(
-                  'Average',
-                  style: TextStyle(
-                    fontSize: 15,
-                    color: Colors.black45,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 0.5),
-            Row(
-              children: [
-                Text(
-                  '${generalAverageSpots.isNotEmpty ? generalAverageSpots.map((e) => e.y).reduce((a, b) => a + b).toInt() ~/ generalAverageSpots.length : 0}',
-                  style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black),
-                ),
-                const SizedBox(width: 4),
-                Icon(currencyIcons[globalCurrency] ?? Icons.attach_money,
-                    size: 18, color: Colors.black),
-              ],
-            )
-          ],
-        ),
-        const SizedBox(width: 30),
-        // Selected Month
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Row(
-              children: [
-                Container(width: 4, height: 16, color: Colors.cyan),
-                const SizedBox(width: 6),
-                Text(
-                  _selectedDate,
-                  style: TextStyle(
-                    fontSize: 15,
-                    color: Colors.black45,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 0.5),
-            Row(
-              children: [
-                Text(
-                  '${selectedMonthSpots.isNotEmpty ? selectedMonthSpots.map((e) => e.y).reduce((a, b) => a + b).toInt() : 0}',
-                  style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black),
-                ),
-                const SizedBox(width: 4),
-                Icon(currencyIcons[globalCurrency] ?? Icons.attach_money,
-                    size: 18, color: Colors.black),
-              ],
-            )
-          ],
-        ),
-        const SizedBox(width: 30),
-        GestureDetector(
-          onTap: _showCategoryPicker,
-          child: Container(
-            height: 50,
-            width: 100,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border.all(color: Colors.grey.withValues(alpha: 0.4)),
-              borderRadius: BorderRadius.circular(5),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Flexible(
-                  child: Text(
-                    _selectedCategory,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 11, color: Colors.black87),
-                  ),
-                ),
-                const Icon(Icons.arrow_drop_down, color: Colors.black87),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _lineChartCard() {
-    final allYValues = [
-      ...selectedMonthSpots.map((e) => e.y),
-      ...generalAverageSpots.map((e) => e.y),
-    ];
-    final double maxY = allYValues.isNotEmpty
-        ? (allYValues.reduce((a, b) => a > b ? a : b)) * 1.2
-        : 500;
-
-    return AspectRatio(
-      aspectRatio: 1.2,
-      child: Card(
-        color: Colors.white,
-        elevation: 3,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: LineChart(
-            LineChartData(
-              backgroundColor: Colors.white,
-              lineTouchData: LineTouchData(
-                handleBuiltInTouches: true,
-                touchTooltipData: LineTouchTooltipData(
-                  tooltipBorderRadius: BorderRadius.circular(8),
-                  tooltipPadding: const EdgeInsets.all(8),
-                  tooltipMargin: 10,
-                  getTooltipColor: (spot) => Colors.white,
-                  getTooltipItems: (touchedSpots) {
-                    return touchedSpots.map((spot) {
-                      final touchedX = spot.x;
-                      final matchingSpot = spot.bar.spots.firstWhere(
-                        (s) => s.x == touchedX,
-                        orElse: () => FlSpot.nullSpot,
-                      );
-                      if (matchingSpot == FlSpot.nullSpot) return null;
-                      final isIncome = spot.barIndex == 0;
-                      final label = isIncome ? 'Average' : 'Selected';
-                      final color =
-                          isIncome ? Colors.blue.shade900 : Colors.cyan;
-
-                      return LineTooltipItem(
-                        '$label: ${spot.y.toInt()}${currencySymbolMap[globalCurrency] ?? ''}',
-                        TextStyle(
-                          color: color,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                        ),
-                      );
-                    }).toList();
-                  },
-                ),
-              ),
-              gridData: FlGridData(
-                show: true,
-                drawVerticalLine: true,
-                getDrawingHorizontalLine: (value) => FlLine(
-                  color: Colors.grey.withValues(alpha: 0.2),
-                  strokeWidth: 1,
-                ),
-              ),
-              titlesData: FlTitlesData(
-                leftTitles: AxisTitles(
-                  sideTitles: SideTitles(
-                    showTitles: true,
-                    reservedSize: 42,
-                    interval: 100,
-                    getTitlesWidget: (value, meta) {
-                      return Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text('${value.toInt()}',
-                              style: const TextStyle(fontSize: 10)),
-                          const SizedBox(width: 2),
-                          Icon(
-                              currencyIcons[globalCurrency] ??
-                                  Icons.attach_money,
-                              size: 10,
-                              color: Colors.black),
-                        ],
-                      );
-                    },
-                  ),
-                ),
-                bottomTitles: AxisTitles(
-                  sideTitles: SideTitles(
-                    showTitles: true,
-                    interval: 1,
-                    getTitlesWidget: (value, meta) {
-                      const labels = ['1-6', '7-12', '13-18', '19-24', '25-31'];
-                      return Text(labels[value.toInt()],
-                          style: const TextStyle(fontSize: 10));
-                    },
-                  ),
-                ),
-                rightTitles:
-                    AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                topTitles:
-                    AxisTitles(sideTitles: SideTitles(showTitles: false)),
-              ),
-              borderData: FlBorderData(
-                show: true,
-                border: Border.all(color: Colors.grey.withValues(alpha: 0.3)),
-              ),
-              minX: 0,
-              maxX: 4,
-              minY: 0,
-              maxY: maxY,
-              lineBarsData: [
-                LineChartBarData(
-                  isCurved: true,
-                  barWidth: 3,
-                  color: Colors.cyan,
-                  belowBarData: BarAreaData(show: false),
-                  dotData: FlDotData(show: true),
-                  spots: generalAverageSpots.isNotEmpty
-                      ? generalAverageSpots
-                      : [FlSpot(0, 200), FlSpot(1, 250)],
-                ),
-                LineChartBarData(
-                  isCurved: true,
-                  barWidth: 3,
-                  color: Colors.blue.shade900,
-                  belowBarData: BarAreaData(show: false),
-                  dotData: FlDotData(show: true),
-                  spots: selectedMonthSpots.isNotEmpty
-                      ? selectedMonthSpots
-                      : [FlSpot(0, 180), FlSpot(1, 230)],
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _aiSuggestionCard(String aiSuggestionResponse) {
-    return Card(
-      color: Colors.white,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      elevation: 3,
-      child: Padding(
-        padding: EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Icon(Icons.attach_money_rounded,
-                    color: Colors.lightBlue, size: 36),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text("Envolet AI says:",
-                          style: TextStyle(
-                              fontWeight: FontWeight.bold, fontSize: 16)),
-                      const SizedBox(height: 6),
-                      Text(
-                        aiSuggestionResponse,
-                        style: const TextStyle(
-                            fontSize: 14, color: Colors.black87),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _analyticTab() {
-    final Map<String, Color> categoryColorMap = {
-      'Food & Drinks': Colors.green,
-      'Transportation': Colors.orange,
-      'Housing': Colors.blueGrey,
-      'Bills': Colors.blue,
-      'Health': Colors.redAccent,
-      'Entertainment': Colors.purple,
-      'Shopping': Colors.teal,
-      'Education': Colors.indigo,
-      'Travel': Colors.cyan,
-    };
-
-    if (categorySummary.isEmpty) {
-      return const Center(
-        child: Text(
-          "No data available for selected month.",
-          style: TextStyle(color: Colors.black54),
-        ),
-      );
-    }
-
-    final List<Map<String, dynamic>> data = categorySummary;
-
-    final List<PieChartSectionData> sections = data.map((item) {
-      final category = item['category'].toString();
-      final percentage = (item['percentage'] as num).toDouble();
-
-      return PieChartSectionData(
-        value: percentage,
-        title: '${percentage.toStringAsFixed(1)}%',
-        color: categoryColorMap[category] ?? Colors.grey,
-        radius: 60,
-        titleStyle: const TextStyle(color: Colors.white, fontSize: 12),
-      );
-    }).toList();
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          const SizedBox(height: 20),
-          AspectRatio(
-            aspectRatio: 1.3,
-            child: PieChart(
-              PieChartData(
-                sections: sections,
-                centerSpaceRadius: 60,
-                sectionsSpace: 2,
-                borderData: FlBorderData(show: false),
-              ),
-            ),
-          ),
-          const SizedBox(height: 20),
-          Wrap(
-            spacing: 16,
-            runSpacing: 12,
-            children: data.map((item) {
-              final category = item['category'].toString();
-
-              return Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 12,
-                    height: 12,
-                    decoration: BoxDecoration(
-                      color: categoryColorMap[category] ?? Colors.grey,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    category,
-                    style: const TextStyle(fontSize: 13, color: Colors.black87),
-                  ),
-                ],
-              );
-            }).toList(),
+          AiSuggestionCard(
+            suggestion: _suggestion,
+            isLoading: _isSuggestionLoading,
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _DropdownButton extends StatelessWidget {
+  const _DropdownButton({
+    required this.label,
+    required this.onTap,
+    this.width,
+    this.fontSize = 14,
+  });
+
+  final String label;
+  final VoidCallback onTap;
+  final double? width;
+  final double fontSize;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(5),
+      child: Container(
+        width: width,
+        height: 44,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.grey.withValues(alpha: 0.4)),
+          borderRadius: BorderRadius.circular(5),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Flexible(
+              child: Text(
+                label,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontSize: fontSize, color: Colors.black87),
+              ),
+            ),
+            const Icon(Icons.arrow_drop_down, color: Colors.black87),
+          ],
+        ),
       ),
     );
   }

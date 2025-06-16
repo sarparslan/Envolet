@@ -1,132 +1,85 @@
-import 'package:envolet_frontend/utils/globals.dart';
+import 'package:envolet_frontend/models/asset.dart';
+import 'package:envolet_frontend/providers/settings_provider.dart';
+import 'package:envolet_frontend/utils/formatters.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 
-class CustomCreditCard extends StatelessWidget {
-  final String cardTail; // Last 4 digits
-  final String bankName;
-  final String balance;
-  final VoidCallback onEditPressed;
-  final String? colorHex; // Optional card color (hex)
-  final String? cardBrand;
-  final String? currency;
+class CreditCard extends StatelessWidget {
+  const CreditCard({super.key, required this.asset, required this.onEdit});
 
-  const CustomCreditCard({
-    super.key,
-    required this.cardTail,
-    required this.bankName,
-    required this.balance,
-    required this.onEditPressed,
-    this.colorHex,
-    this.cardBrand,
-    this.currency,
-  });
+  final Asset asset;
+  final VoidCallback onEdit;
 
-  // Convert a hex string to Color
-  Color _hexToColor(String hex) {
-    hex = hex.replaceAll("#", "");
-    if (hex.length == 6) hex = "FF$hex";
-    return Color(int.parse(hex, radix: 16));
-  }
-
-  // Get icon based on cardBrand
-  IconData? _getCardIcon(String? brand) {
-    switch (brand) {
-      case "Visa":
-        return FontAwesomeIcons.ccVisa;
-      case "MasterCard":
-        return FontAwesomeIcons.ccMastercard;
-      case "American Express":
-        return FontAwesomeIcons.ccAmex;
-      case "Discover":
-        return FontAwesomeIcons.ccDiscover;
-      case "Amazon Pay":
-        return FontAwesomeIcons.ccAmazonPay;
-      case "Apple Pay":
-        return FontAwesomeIcons.ccApplePay;
-      case "Paypal":
-        return FontAwesomeIcons.ccPaypal;
-      default:
-        return null;
-    }
-  }
+  static const Map<String, FaIconData> _brandIcons = {
+    'Visa': FontAwesomeIcons.ccVisa,
+    'MasterCard': FontAwesomeIcons.ccMastercard,
+    'American Express': FontAwesomeIcons.ccAmex,
+    'Discover': FontAwesomeIcons.ccDiscover,
+    'Amazon Pay': FontAwesomeIcons.ccAmazonPay,
+    'Apple Pay': FontAwesomeIcons.ccApplePay,
+    'Paypal': FontAwesomeIcons.ccPaypal,
+  };
 
   @override
   Widget build(BuildContext context) {
-    final backgroundColor =
-        (colorHex != null) ? _hexToColor(colorHex!) : Colors.black87;
-    final icon = _getCardIcon(cardBrand);
-
-    final String currencySymbolString = currencySymbolMap[globalCurrency] ?? '';
-
-    // Format the balance with thousand separators
-    String formattedBalance = balance;
-    try {
-      final num value = num.parse(balance);
-      formattedBalance = NumberFormat('#,##0').format(value);
-    } catch (e) {
-      // Fall back to the raw value if it cannot be parsed
-    }
+    final currencySymbol = context.watch<SettingsProvider>().currencySymbol;
+    final brandIcon = _brandIcons[asset.brand];
 
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
       decoration: BoxDecoration(
-        color: backgroundColor,
+        color: colorFromHex(asset.color),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Top row: Card brand icon and "**** {cardTail}"
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              icon != null
-                  ? Icon(icon, color: Colors.white, size: 30)
-                  : SizedBox(width: 30, height: 30),
+              brandIcon != null
+                  ? FaIcon(brandIcon, color: Colors.white, size: 30)
+                  : const SizedBox.square(dimension: 30),
               Text(
-                '**** $cardTail',
-                style: TextStyle(
-                  color: Colors.white70,
-                  fontSize: 16,
-                ),
+                '**** ${asset.lastFourDigits}',
+                style: const TextStyle(color: Colors.white70, fontSize: 16),
               ),
             ],
           ),
-          SizedBox(height: 65),
-          // Bank name
+          const Spacer(),
           Text(
-            bankName,
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 15,
-            ),
+            asset.bankName,
+            style: const TextStyle(color: Colors.white, fontSize: 15),
           ),
-          // Bottom row: Balance and Edit button, with currency symbol
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                '$currencySymbolString$formattedBalance',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
+              Flexible(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    '$currencySymbol${formatAmount(asset.amount)}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
               ),
               ElevatedButton(
-                onPressed: onEditPressed,
+                onPressed: onEdit,
                 style: ElevatedButton.styleFrom(
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                 ),
-                child: Text(
-                  'Edit',
-                  style: TextStyle(color: Colors.black),
-                ),
+                child:
+                    const Text('Edit', style: TextStyle(color: Colors.black)),
               ),
             ],
           ),

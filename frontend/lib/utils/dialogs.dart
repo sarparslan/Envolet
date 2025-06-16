@@ -1,62 +1,32 @@
-import 'package:envolet_frontend/auth/login_page.dart';
-import 'package:envolet_frontend/services/api_service.dart';
-import 'package:envolet_frontend/utils/globals.dart';
+import 'package:envolet_frontend/providers/session_provider.dart';
+import 'package:envolet_frontend/providers/settings_provider.dart';
+import 'package:envolet_frontend/screens/auth/login_page.dart';
+import 'package:envolet_frontend/utils/formatters.dart';
+import 'package:envolet_frontend/utils/navigation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import 'package:quickalert/quickalert.dart';
-import 'package:flutter_spinkit/flutter_spinkit.dart';
 
+const _accentBlue = Color(0xFF2D6BFF);
+
+/// Reusable alerts, confirmation dialogs and bottom sheets.
 class AppDialogs {
-  static void successAlertAndNavigate(BuildContext context, String title) {
-    QuickAlert.show(
-      context: context,
-      type: QuickAlertType.success,
-      text: title,
-      confirmBtnColor: Colors.green,
-      confirmBtnText: "Success",
-    ).then((_) {
-      if (context.mounted) Navigator.of(context).pop();
-    });
-  }
+  AppDialogs._();
 
-  static void showCardActionSuccess(
+  static Future<void> showSuccess(
     BuildContext context,
     String message, {
-    required VoidCallback onContinue,
-  }) async {
-    await QuickAlert.show(
+    String? title,
+    String confirmText = 'Continue',
+  }) {
+    return QuickAlert.show(
       context: context,
       type: QuickAlertType.success,
+      title: title,
       text: message,
-      confirmBtnText: "Continue",
-      confirmBtnColor: const Color(0xFF2D6BFF),
-      backgroundColor: Colors.white,
-      titleColor: Colors.black,
-      textColor: Colors.black54,
-      confirmBtnTextStyle: const TextStyle(
-        fontWeight: FontWeight.w600,
-        color: Colors.white,
-        fontSize: 16,
-      ),
-      onConfirmBtnTap: () {
-        Navigator.of(context).pop();
-      },
-    );
-    Future.delayed(Duration(milliseconds: 100), onContinue);
-  }
-
-  static void successAlertAndGoToPage(
-    BuildContext context,
-    String title,
-    Widget destinationPage,
-  ) {
-    QuickAlert.show(
-      context: context,
-      type: QuickAlertType.success,
-      title: "Success",
-      text: title,
-      confirmBtnText: "Ok",
-      confirmBtnColor: const Color(0xFF2D6BFF),
+      confirmBtnText: confirmText,
+      confirmBtnColor: _accentBlue,
       backgroundColor: Colors.white,
       barrierColor: Colors.black.withValues(alpha: 0.2),
       titleColor: Colors.black,
@@ -66,84 +36,19 @@ class AppDialogs {
         color: Colors.white,
         fontSize: 16,
       ),
-      onConfirmBtnTap: () {
-        Navigator.of(context).pop();
-        Future.delayed(const Duration(milliseconds: 300), () {
-          if (!context.mounted) return;
-          Navigator.of(context).pushReplacement(
-            PageRouteBuilder(
-              transitionDuration: const Duration(milliseconds: 600),
-              pageBuilder: (context, animation, secondaryAnimation) =>
-                  destinationPage,
-              transitionsBuilder:
-                  (context, animation, secondaryAnimation, child) {
-                final offsetAnimation = Tween<Offset>(
-                  begin: const Offset(1.0, 0.0),
-                  end: Offset.zero,
-                ).animate(CurvedAnimation(
-                  parent: animation,
-                  curve: Curves.easeInOut,
-                ));
-
-                final fadeAnimation = Tween<double>(
-                  begin: 0.0,
-                  end: 1.0,
-                ).animate(animation);
-
-                return SlideTransition(
-                  position: offsetAnimation,
-                  child: FadeTransition(
-                    opacity: fadeAnimation,
-                    child: child,
-                  ),
-                );
-              },
-            ),
-          );
-        });
-      },
     );
   }
 
-  static void navigateWithFade(BuildContext context, Widget destinationPage) {
-    Navigator.of(context).pushReplacement(
-      PageRouteBuilder(
-        transitionDuration: Duration(milliseconds: 600),
-        pageBuilder: (context, animation, secondaryAnimation) =>
-            destinationPage,
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          final offsetAnimation = Tween<Offset>(
-            begin: Offset(1.0, 0.0),
-            end: Offset.zero,
-          ).animate(CurvedAnimation(
-            parent: animation,
-            curve: Curves.easeInOut,
-          ));
-
-          final fadeAnimation = Tween<double>(
-            begin: 0.0,
-            end: 1.0,
-          ).animate(animation);
-
-          return SlideTransition(
-            position: offsetAnimation,
-            child: FadeTransition(
-              opacity: fadeAnimation,
-              child: child,
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  static void errorAlertAndNavigate(
-      BuildContext context, String content, String title) {
-    QuickAlert.show(
+  static Future<void> showError(
+    BuildContext context,
+    String message, {
+    String title = 'Error',
+  }) {
+    return QuickAlert.show(
       context: context,
       type: QuickAlertType.error,
       title: title,
-      text: content,
+      text: message,
       confirmBtnText: 'Try Again',
       confirmBtnColor: Colors.red,
       backgroundColor: Colors.white,
@@ -152,430 +57,249 @@ class AppDialogs {
     );
   }
 
-  static void showLoadingDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return Center(
-          child: SpinKitWave(
-            color: Colors.blue,
-            size: 50.0,
-          ),
-        );
-      },
-    );
-  }
-
-  static void hideLoadingDialog(BuildContext context) {
-    Navigator.of(context).pop();
-  }
-
   static void showLogoutDialog(BuildContext context) {
-    showDialog(
+    showDialog<void>(
       context: context,
-      builder: (BuildContext context) {
-        return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16.0),
-          ),
-          backgroundColor: Colors.white,
-          child: Padding(
-            padding:
-                const EdgeInsets.symmetric(vertical: 20.0, horizontal: 16.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Padding(
-                  padding: EdgeInsets.only(right: 230),
-                  child: Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: Colors.orange.shade100,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(Icons.warning, color: Colors.orange),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Text(
-                  "Are you sure you want to sign out?",
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 20),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    minimumSize: const Size(double.infinity, 48),
-                  ),
-                  onPressed: () async {
-                    await ApiService.logout();
-                    if (!context.mounted) return;
-                    Navigator.of(context).pop();
-                    AppDialogs.navigateWithFade(context, LoginPage());
-                  },
-                  child: const Text(
-                    "Confirm",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 16,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                OutlinedButton(
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: Colors.black),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    minimumSize: const Size(double.infinity, 48),
-                  ),
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: const Text(
-                    "Cancel",
-                    style: TextStyle(
-                      color: Colors.black,
-                      fontWeight: FontWeight.w500,
-                      fontSize: 16,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  static void showDeleteAccountDialog(BuildContext context) {
-    bool isConfirmed = false;
-
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return Dialog(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              backgroundColor: Colors.white,
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: IntrinsicHeight(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Center(
-                        child: Padding(
-                          padding: EdgeInsets.only(right: 230),
-                          child: Container(
-                            width: 40,
-                            height: 40,
-                            decoration: BoxDecoration(
-                              color: Colors.red.shade100,
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(Icons.delete_outline,
-                                color: Colors.red),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      const Center(
-                        child: Text(
-                          "Deleting your account",
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      const Center(
-                        child: Text(
-                          "Are you sure you want to delete your account?\nThis action cannot be undone.",
-                          textAlign: TextAlign.center,
-                          style: TextStyle(fontSize: 14, height: 1.4),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      ElevatedButton(
-                        onPressed: isConfirmed
-                            ? () async {
-                                await ApiService.deleteAccount();
-                                if (!context.mounted) return;
-                                Navigator.of(context).pop();
-                                AppDialogs.navigateWithFade(
-                                    context, LoginPage());
-                              }
-                            : null,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red,
-                          disabledBackgroundColor: Colors.grey.shade300,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          minimumSize: const Size(double.infinity, 48),
-                        ),
-                        child: const Text(
-                          "Delete",
-                          style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 16,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      OutlinedButton(
-                        onPressed: () => Navigator.of(context).pop(),
-                        style: OutlinedButton.styleFrom(
-                          side: const BorderSide(color: Colors.black),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          minimumSize: const Size(double.infinity, 48),
-                        ),
-                        child: const Text(
-                          "Cancel",
-                          style: TextStyle(
-                            color: Colors.black,
-                            fontWeight: FontWeight.w500,
-                            fontSize: 16,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      Row(
-                        children: [
-                          Checkbox(
-                            value: isConfirmed,
-                            onChanged: (val) => setState(() {
-                              isConfirmed = val ?? false;
-                            }),
-                          ),
-                          const Text("I am sure."),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  static void showSuccessAlert(BuildContext context, String message) {
-    QuickAlert.show(
-      context: context,
-      type: QuickAlertType.success,
-      text: message,
-      confirmBtnText: "Continue",
-      confirmBtnColor: const Color(0xFF2D6BFF),
-      backgroundColor: Colors.white,
-      titleColor: Colors.black,
-      textColor: Colors.black54,
-      confirmBtnTextStyle: const TextStyle(
-        fontWeight: FontWeight.w600,
-        color: Colors.white,
-        fontSize: 16,
+      builder: (dialogContext) => _ConfirmationDialog(
+        icon: Icons.warning,
+        iconColor: Colors.orange,
+        message: 'Are you sure you want to sign out?',
+        confirmText: 'Confirm',
+        confirmColor: Colors.blue,
+        onConfirm: () async {
+          await context.read<SessionProvider>().logout();
+          if (context.mounted) resetTo(context, const LoginPage());
+        },
       ),
     );
   }
 
-  static void showTransactionUpdateSuccessBottomSheet(
+  static void showDeleteAccountDialog(BuildContext context) {
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => _ConfirmationDialog(
+        icon: Icons.delete_outline,
+        iconColor: Colors.red,
+        title: 'Deleting your account',
+        message:
+            'Are you sure you want to delete your account?\nThis action cannot be undone.',
+        confirmText: 'Delete',
+        confirmColor: Colors.red,
+        requireCheckbox: true,
+        onConfirm: () async {
+          try {
+            await context.read<SessionProvider>().deleteAccount();
+            if (context.mounted) resetTo(context, const LoginPage());
+          } on Exception {
+            if (context.mounted) {
+              Navigator.of(dialogContext).pop();
+              showError(context, 'Could not delete your account.');
+            }
+          }
+        },
+      ),
+    );
+  }
+
+  /// Confirmation sheet shown after a transaction was created or updated.
+  static void showTransactionSaved(
     BuildContext context, {
+    required bool isUpdate,
     required String category,
     required double amount,
     required DateTime date,
   }) {
-    showModalBottomSheet(
+    final currency = context.read<SettingsProvider>().currency;
+
+    showModalBottomSheet<void>(
       context: context,
-      isScrollControlled: true,
-      isDismissible: true,
-      enableDrag: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) {
-        return GestureDetector(
-          onTap: () => Navigator.of(context).pop(),
-          child: Container(
-            color: Colors.transparent,
-            child: GestureDetector(
-              onTap: () {}, // Absorb taps so the sheet itself does not close
-              child: Container(
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-                ),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 72,
-                      height: 72,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFF00C851),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Center(
-                        child: Icon(
-                          Icons.check,
-                          color: Colors.white,
-                          size: 40,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    const Text(
-                      "Transaction Updated!",
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    const Text(
-                      "Your expense has been updated!",
-                      style: TextStyle(fontSize: 14, color: Colors.black54),
-                    ),
-                    const SizedBox(height: 24),
-                    _successInfoRow(
-                        "Date", DateFormat('dd MMM, yyyy').format(date)),
-                    const SizedBox(height: 12),
-                    _successInfoRow("Category", category),
-                    const SizedBox(height: 12),
-                    _successInfoRow(
-                        "Amount", "${amount.toString()} $globalCurrency"),
-                    const SizedBox(height: 12),
-                  ],
-                ),
-              ),
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const CircleAvatar(
+              radius: 36,
+              backgroundColor: Color(0xFF00C851),
+              child: Icon(Icons.check, color: Colors.white, size: 40),
             ),
-          ),
-        );
-      },
+            const SizedBox(height: 16),
+            Text(
+              isUpdate ? 'Transaction Updated!' : 'Transaction Successful',
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              isUpdate
+                  ? 'Your expense has been updated!'
+                  : 'Your expense has been recorded!',
+              style: const TextStyle(fontSize: 14, color: Colors.black54),
+            ),
+            const SizedBox(height: 24),
+            _InfoRow('Date', DateFormat('dd MMM, yyyy').format(date)),
+            const SizedBox(height: 12),
+            _InfoRow('Category', category),
+            const SizedBox(height: 12),
+            _InfoRow('Amount', '${formatAmount(amount)} $currency'),
+            const SizedBox(height: 12),
+          ],
+        ),
+      ),
     );
   }
+}
 
-  static void showTransactionSuccessBottomSheet(
-    BuildContext context, {
-    required String category,
-    required double amount,
-    required DateTime date,
-  }) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      isDismissible: true,
-      enableDrag: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) {
-        return GestureDetector(
-          onTap: () => Navigator.of(context).pop(),
-          child: Container(
-            color: Colors.transparent,
-            child: GestureDetector(
-              onTap: () {}, // Absorb taps so the sheet itself does not close
-              child: Container(
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-                ),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 72,
-                      height: 72,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFF00C851),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Center(
-                        child: Icon(
-                          Icons.check,
-                          color: Colors.white,
-                          size: 40,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    const Text(
-                      "Transaction Successful",
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    const Text(
-                      "Your expense has been recorded!",
-                      style: TextStyle(fontSize: 14, color: Colors.black54),
-                    ),
-                    const SizedBox(height: 24),
-                    _successInfoRow(
-                        "Date", DateFormat('dd MMM, yyyy').format(date)),
-                    const SizedBox(height: 12),
-                    _successInfoRow("Category", category),
-                    const SizedBox(height: 12),
-                    _successInfoRow(
-                        "Amount", "${amount.toString()} $globalCurrency"),
-                    const SizedBox(height: 12),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
+class _InfoRow extends StatelessWidget {
+  const _InfoRow(this.label, this.value);
 
-  static Widget _successInfoRow(String label, String value,
-      {bool isCurrency = false}) {
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(label,
             style: const TextStyle(fontSize: 14, color: Colors.black54)),
-        Row(
+        Text(value,
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+      ],
+    );
+  }
+}
+
+class _ConfirmationDialog extends StatefulWidget {
+  const _ConfirmationDialog({
+    required this.icon,
+    required this.iconColor,
+    required this.message,
+    required this.confirmText,
+    required this.confirmColor,
+    required this.onConfirm,
+    this.title,
+    this.requireCheckbox = false,
+  });
+
+  final IconData icon;
+  final MaterialColor iconColor;
+  final String? title;
+  final String message;
+  final String confirmText;
+  final Color confirmColor;
+  final Future<void> Function() onConfirm;
+  final bool requireCheckbox;
+
+  @override
+  State<_ConfirmationDialog> createState() => _ConfirmationDialogState();
+}
+
+class _ConfirmationDialogState extends State<_ConfirmationDialog> {
+  bool _checked = false;
+  bool _busy = false;
+
+  bool get _canConfirm => !_busy && (!widget.requireCheckbox || _checked);
+
+  Future<void> _confirm() async {
+    setState(() => _busy = true);
+    await widget.onConfirm();
+    if (mounted) setState(() => _busy = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final buttonShape =
+        RoundedRectangleBorder(borderRadius: BorderRadius.circular(10));
+    const buttonSize = Size(double.infinity, 48);
+
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      backgroundColor: Colors.white,
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              value,
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-            ),
-            if (isCurrency) ...[
-              const SizedBox(width: 6),
-              Icon(
-                currencyIcons[globalCurrency] ?? Icons.attach_money,
-                size: 14,
-                color: Colors.black87,
+            Align(
+              alignment: Alignment.centerLeft,
+              child: CircleAvatar(
+                radius: 20,
+                backgroundColor: widget.iconColor.shade100,
+                child: Icon(widget.icon, color: widget.iconColor),
               ),
-            ]
+            ),
+            const SizedBox(height: 20),
+            if (widget.title != null) ...[
+              Text(
+                widget.title!,
+                style:
+                    const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 10),
+            ],
+            Text(
+              widget.message,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: widget.title == null ? 16 : 14,
+                fontWeight:
+                    widget.title == null ? FontWeight.w600 : FontWeight.normal,
+                height: 1.4,
+              ),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: _canConfirm ? _confirm : null,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: widget.confirmColor,
+                foregroundColor: Colors.white,
+                disabledBackgroundColor: Colors.grey.shade300,
+                shape: buttonShape,
+                minimumSize: buttonSize,
+              ),
+              child: Text(
+                widget.confirmText,
+                style:
+                    const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+              ),
+            ),
+            const SizedBox(height: 10),
+            OutlinedButton(
+              onPressed: () => Navigator.of(context).pop(),
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: Colors.black),
+                shape: buttonShape,
+                minimumSize: buttonSize,
+              ),
+              child: const Text(
+                'Cancel',
+                style: TextStyle(
+                  color: Colors.black,
+                  fontWeight: FontWeight.w500,
+                  fontSize: 16,
+                ),
+              ),
+            ),
+            if (widget.requireCheckbox) ...[
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Checkbox(
+                    value: _checked,
+                    onChanged: (value) =>
+                        setState(() => _checked = value ?? false),
+                  ),
+                  const Text('I am sure.'),
+                ],
+              ),
+            ],
           ],
         ),
-      ],
+      ),
     );
   }
 }

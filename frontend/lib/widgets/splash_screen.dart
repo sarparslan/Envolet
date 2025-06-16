@@ -1,5 +1,7 @@
+import 'package:envolet_frontend/main.dart';
+import 'package:envolet_frontend/providers/session_provider.dart';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:provider/provider.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -10,37 +12,29 @@ class SplashScreen extends StatefulWidget {
 
 class _SplashScreenState extends State<SplashScreen>
     with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _logoAnimation;
-  late Animation<double> _textOpacityAnimation;
+  late final AnimationController _controller;
 
   @override
   void initState() {
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: Duration(milliseconds: 1500),
+      duration: const Duration(milliseconds: 1500),
     );
+    _start();
+  }
 
-    _logoAnimation = Tween(
-      begin: 1.0,
-      end: 0.0,
-    ).animate(_controller);
+  Future<void> _start() async {
+    final session = context.read<SessionProvider>();
+    final results = await Future.wait([
+      session.restoreSession(),
+      _controller.forward().then((_) => true),
+    ]);
+    if (!mounted) return;
 
-    _textOpacityAnimation = Tween(
-      begin: 1.0,
-      end: 0.0,
-    ).animate(_controller);
-
-    _controller.forward().then((value) async {
-      bool userLoggedIn = await isLoggedIn();
-      if (!mounted) return;
-      if (userLoggedIn) {
-        Navigator.of(context).pushReplacementNamed('/home');
-      } else {
-        Navigator.of(context).pushReplacementNamed('/auth');
-      }
-    });
+    Navigator.of(context).pushReplacementNamed(
+      results.first ? EnvoletApp.routeHome : EnvoletApp.routeAuth,
+    );
   }
 
   @override
@@ -51,42 +45,29 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    final size = MediaQuery.sizeOf(context);
+    final fadeOut = Tween(begin: 1.0, end: 0.0).animate(_controller);
+
+    return ColoredBox(
       color: Colors.white,
-      child: Center(
+      child: FadeTransition(
+        opacity: fadeOut,
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: <Widget>[
-            Padding(
-              padding: EdgeInsets.only(
-                top: MediaQuery.of(context).size.height * 0.2,
-              ),
-              child: FadeTransition(
-                opacity: _logoAnimation,
-                child: Image(
-                  image: AssetImage("images/logo.png"),
-                  width: MediaQuery.of(context).size.width * 0.8,
-                  height: MediaQuery.of(context).size.height * 0.3,
-                ),
-              ),
+          children: [
+            SizedBox(height: size.height * 0.2),
+            Image.asset(
+              'images/logo.png',
+              width: size.width * 0.8,
+              height: size.height * 0.3,
             ),
-            SizedBox(
-              height: MediaQuery.of(context).size.height * 0.1,
-            ),
-            FadeTransition(
-              opacity: _textOpacityAnimation,
-              child: Column(
-                children: [
-                  Text(
-                    "Track. Save. Thrive",
-                    style: TextStyle(
-                      color: Color(0xFF6998AB),
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      decoration: TextDecoration.none,
-                    ),
-                  ),
-                ],
+            SizedBox(height: size.height * 0.1),
+            const Text(
+              'Track. Save. Thrive',
+              style: TextStyle(
+                color: Color(0xFF6998AB),
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                decoration: TextDecoration.none,
               ),
             ),
           ],
@@ -94,10 +75,4 @@ class _SplashScreenState extends State<SplashScreen>
       ),
     );
   }
-}
-
-Future<bool> isLoggedIn() async {
-  final prefs = await SharedPreferences.getInstance();
-  final token = prefs.getString("token");
-  return token != null && token.isNotEmpty;
 }

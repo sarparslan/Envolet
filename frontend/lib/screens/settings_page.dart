@@ -1,8 +1,11 @@
+import 'package:envolet_frontend/core/constants.dart';
+import 'package:envolet_frontend/providers/session_provider.dart';
+import 'package:envolet_frontend/providers/settings_provider.dart';
 import 'package:envolet_frontend/utils/dialogs.dart';
+import 'package:envolet_frontend/widgets/bottom_nav_bar.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:envolet_frontend/widgets/bottom_nav_bar.dart';
-import 'package:envolet_frontend/utils/globals.dart';
+import 'package:provider/provider.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -12,49 +15,22 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
-  @override
-  void initState() {
-    super.initState();
-  }
-
-  final List<String> currencies = [
-    "USD",
-    "EUR",
-    "GBP",
-    "JPY",
-    "TL",
-    "CHF",
-  ];
-
-  Map<String, IconData> currencyIcons = {
-    'USD': Icons.attach_money,
-    'EUR': Icons.euro_symbol,
-    'GBP': Icons.currency_pound,
-    'JPY': Icons.currency_yen,
-    'TL': Icons.currency_lira,
-    'CHF': Icons.currency_franc,
-  };
-
-  String selectedCurrency = globalCurrency;
-
   void _showCurrencyPicker() {
-    showCupertinoModalPopup(
+    final settings = context.read<SettingsProvider>();
+    showCupertinoModalPopup<void>(
       context: context,
       builder: (_) => Container(
-        height: MediaQuery.of(context).size.height * 0.3,
+        height: 260,
         color: Colors.white,
         child: CupertinoPicker(
           backgroundColor: Colors.white,
-          itemExtent: MediaQuery.of(context).size.height * 0.04,
+          itemExtent: 36,
           scrollController: FixedExtentScrollController(
-              initialItem: currencies.indexOf(selectedCurrency)),
-          onSelectedItemChanged: (index) {
-            setState(() {
-              selectedCurrency = currencies[index];
-              globalCurrency = currencies[index];
-            });
-          },
-          children: currencies.map((e) => Text(e)).toList(),
+            initialItem: currencies.indexOf(settings.currency),
+          ),
+          onSelectedItemChanged: (index) =>
+              settings.setCurrency(currencies[index]),
+          children: currencies.map((c) => Center(child: Text(c))).toList(),
         ),
       ),
     );
@@ -93,12 +69,10 @@ class _SettingsPageState extends State<SettingsPage> {
             style: TextStyle(
                 color: colorSet["textColor"],
                 fontWeight: FontWeight.bold,
-                fontSize: MediaQuery.of(context).size.height * 0.025)),
+                fontSize: 20)),
         content: Text(content,
             style: TextStyle(
-                color: colorSet["textColor"],
-                height: 1.5,
-                fontSize: MediaQuery.of(context).size.height * 0.02)),
+                color: colorSet["textColor"], height: 1.5, fontSize: 16)),
         actions: [
           TextButton(
             child: const Text("Close", style: TextStyle(color: Colors.blue)),
@@ -111,10 +85,8 @@ class _SettingsPageState extends State<SettingsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final height = MediaQuery.of(context).size.height;
-    final width = MediaQuery.of(context).size.width;
-
-    final bgColor = Colors.white;
+    final user = context.watch<SessionProvider>().user;
+    final currency = context.watch<SettingsProvider>().currency;
     final dividerColor = Colors.grey.shade300;
     return Scaffold(
       appBar: AppBar(
@@ -123,21 +95,20 @@ class _SettingsPageState extends State<SettingsPage> {
         elevation: 0,
         automaticallyImplyLeading: false,
       ),
-      backgroundColor: bgColor,
+      backgroundColor: Colors.white,
       body: Padding(
-        padding: EdgeInsets.only(top: height * 0.005),
+        padding: const EdgeInsets.only(top: 4),
         child: ListView(
-          padding: EdgeInsets.symmetric(
-              horizontal: width * 0.05, vertical: height * 0.03),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
           children: [
             _SectionHeader("Account Info", Colors.black),
             _SettingsTileNoArrow(
                 title: "Name",
-                value: ("$userName $userSurname"),
+                value: user?.fullName ?? '',
                 textColor: Colors.black),
             _SettingsTileNoArrow(
                 title: "Email",
-                value: userEmail ?? "loading...",
+                value: user?.email ?? '',
                 textColor: Colors.black),
             Divider(color: dividerColor),
             _SectionHeader("App Preferences", Colors.black),
@@ -148,13 +119,13 @@ class _SettingsPageState extends State<SettingsPage> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Padding(
-                    padding: EdgeInsets.only(right: width * 0.02),
-                    child: Text(selectedCurrency,
-                        style: TextStyle(
-                            fontSize: height * 0.02, color: Colors.black)),
+                    padding: const EdgeInsets.only(right: 8),
+                    child: Text(currency,
+                        style:
+                            const TextStyle(fontSize: 16, color: Colors.black)),
                   ),
-                  Icon(Icons.arrow_forward_ios,
-                      size: height * 0.018, color: Colors.black),
+                  const Icon(Icons.arrow_forward_ios,
+                      size: 14, color: Colors.black),
                 ],
               ),
               onTap: _showCurrencyPicker,
@@ -179,10 +150,8 @@ class _SettingsPageState extends State<SettingsPage> {
           ],
         ),
       ),
-      bottomNavigationBar: Padding(
-        padding: EdgeInsets.only(bottom: height * 0.03),
-        child: BottomNavBarWidget(currentPage: Pages.settings),
-      ),
+      bottomNavigationBar:
+          const BottomNavBarWidget(currentPage: Pages.settings),
     );
   }
 
@@ -210,14 +179,11 @@ class _SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final height = MediaQuery.of(context).size.height;
     return Padding(
-      padding: EdgeInsets.only(bottom: height * 0.015),
+      padding: const EdgeInsets.only(bottom: 12),
       child: Text(title,
           style: TextStyle(
-              fontSize: height * 0.022,
-              fontWeight: FontWeight.w600,
-              color: color)),
+              fontSize: 18, fontWeight: FontWeight.w600, color: color)),
     );
   }
 }
@@ -232,13 +198,10 @@ class _SettingsTileNoArrow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final height = MediaQuery.of(context).size.height;
     return ListTile(
       contentPadding: EdgeInsets.zero,
-      title: Text(title,
-          style: TextStyle(fontSize: height * 0.02, color: textColor)),
-      trailing: Text(value,
-          style: TextStyle(fontSize: height * 0.02, color: textColor)),
+      title: Text(title, style: TextStyle(fontSize: 16, color: textColor)),
+      trailing: Text(value, style: TextStyle(fontSize: 16, color: textColor)),
     );
   }
 }

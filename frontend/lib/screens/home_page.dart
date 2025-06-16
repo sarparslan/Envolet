@@ -1,13 +1,15 @@
+import 'package:dotted_border/dotted_border.dart';
+import 'package:envolet_frontend/models/asset.dart';
+import 'package:envolet_frontend/models/transaction.dart';
+import 'package:envolet_frontend/providers/session_provider.dart';
 import 'package:envolet_frontend/services/api_service.dart';
 import 'package:envolet_frontend/utils/dialogs.dart';
-import 'package:envolet_frontend/utils/globals.dart';
-import 'package:envolet_frontend/widgets/card_addition_dialog.dart';
-import 'package:envolet_frontend/widgets/credit_card.dart';
+import 'package:envolet_frontend/widgets/asset_form_dialog.dart';
 import 'package:envolet_frontend/widgets/bottom_nav_bar.dart';
+import 'package:envolet_frontend/widgets/credit_card.dart';
+import 'package:envolet_frontend/widgets/transaction_tile.dart';
 import 'package:flutter/material.dart';
-import 'package:dotted_border/dotted_border.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -17,329 +19,216 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  late final PageController _controller;
-  List<Map<String, dynamic>> latestTransactions = [];
-  List<Map<String, dynamic>> cards = [];
+  static const _latestTransactionCount = 3;
 
-  bool isLoading = true;
+  final _pageController = PageController(viewportFraction: 0.8);
+  late final ApiService _api = context.read<ApiService>();
+
+  List<Transaction> _latestTransactions = [];
+  List<Asset> _assets = [];
+  bool _isLoading = true;
+  String? _error;
 
   @override
   void initState() {
     super.initState();
-    _controller = PageController(viewportFraction: 0.8);
-    _loadAllData();
-  }
-
-  Future<void> _loadAllData() async {
-    setState(() => isLoading = true);
-    await _fetchUserEmail();
-    await _fetchLatestTransactions();
-    await _fetchAssets();
-    if (!mounted) return;
-    setState(() => isLoading = false);
-  }
-
-  Future<void> _fetchUserEmail() async {
-    final user = await ApiService.getMe();
-    if (user != null && mounted) {
-      setState(() {
-        userEmail = user['email'];
-        userName = user['name'];
-        userSurname = user['surname'];
-      });
-    }
+    _loadData();
   }
 
   @override
   void dispose() {
-    _controller.dispose();
+    _pageController.dispose();
     super.dispose();
   }
 
-  Future<void> _fetchLatestTransactions() async {
-    final transactions = await ApiService.getTransactions();
-    transactions.sort((a, b) => b["date"].compareTo(a["date"]));
+  Future<void> _loadData() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+    try {
+      final session = context.read<SessionProvider>();
+      await Future.wait([
+        if (session.user == null) session.refreshUser(),
+        _loadTransactions(),
+        _loadAssets(),
+      ]);
+    } on ApiException catch (e) {
+      _error = e.message;
+    }
+    if (mounted) setState(() => _isLoading = false);
+  }
+
+  Future<void> _loadTransactions() async {
+    final transactions = await _api.getTransactions();
     if (!mounted) return;
     setState(() {
-      latestTransactions = transactions.take(3).toList();
+      _latestTransactions = transactions.take(_latestTransactionCount).toList();
     });
   }
 
-  Future<void> _fetchAssets() async {
-    final assets = await ApiService.getAssets();
+  Future<void> _loadAssets() async {
+    final assets = await _api.getAssets();
     if (!mounted) return;
-    setState(() {
-      cards = List.from(assets.reversed);
-    });
+    setState(() => _assets = assets.reversed.toList());
+  }
+
+  Future<void> _addAsset() async {
+    final result = await AssetFormDialog.show(context);
+    if (result is! AssetSaved) return;
+    await _runAssetAction(
+      () => _api.addAsset(result.draft),
+      success: 'Your card was successfully added.',
+      failure: 'Something went wrong while adding the card.',
+    );
+  }
+
+  Future<void> _editAsset(Asset asset) async {
+    final result = await AssetFormDialog.show(context, initial: asset);
+    switch (result) {
+      case AssetSaved(:final draft):
+        await _runAssetAction(
+          () => _api.updateAsset(asset.id, draft),
+          success: 'Your card was successfully updated.',
+          failure: 'Something went wrong while updating the card.',
+        );
+      case AssetDeleted():
+        await _runAssetAction(
+          () => _api.deleteAsset(asset.id),
+          success: 'Your card was successfully deleted.',
+          failure: 'Something went wrong while deleting the card.',
+        );
+      case null:
+        break;
+    }
+  }
+
+  Future<void> _runAssetAction(
+    Future<void> Function() action, {
+    required String success,
+    required String failure,
+  }) async {
+    try {
+      await action();
+      await _loadAssets();
+      if (mounted) AppDialogs.showSuccess(context, success);
+    } on ApiException {
+      if (mounted) AppDialogs.showError(context, failure);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final user = context.watch<SessionProvider>().user;
+
     return Scaffold(
       backgroundColor: Colors.white,
-      body: isLoading
-          ? const Center(
-              child: CircularProgressIndicator(
-                color: Colors.blue,
-              ),
-            )
-          : SingleChildScrollView(
-              child: Column(
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator(color: Colors.blue))
+          : RefreshIndicator(
+              onRefresh: _loadData,
+              child: ListView(
+                padding: const EdgeInsets.only(top: 80),
                 children: [
                   Padding(
-                    padding: EdgeInsets.only(top: 80, left: 20, bottom: 15),
-                    child: title(),
-                  ),
-                  cardRow(),
-                  Padding(
-                    padding: EdgeInsets.only(top: 40, left: 20),
-                    child: Row(
-                      children: [
-                        Text(
-                          'Latest Transactions',
-                          style: TextStyle(
-                            fontSize: 17,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black,
-                          ),
-                        ),
-                      ],
+                    padding: const EdgeInsets.only(left: 20, bottom: 15),
+                    child: Text(
+                      'Welcome, ${user?.fullName ?? ''}',
+                      style: const TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
-                  Padding(
-                    padding: EdgeInsets.only(top: 20),
-                    child: latestTransactionsRow(),
+                  if (_error != null)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: Text(
+                        _error!,
+                        style: const TextStyle(color: Colors.red),
+                      ),
+                    ),
+                  _buildCards(),
+                  const Padding(
+                    padding: EdgeInsets.only(top: 40, left: 20, bottom: 10),
+                    child: Text(
+                      'Latest Transactions',
+                      style: TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
+                  if (_latestTransactions.isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.all(20),
+                      child: Text(
+                        'No transactions yet.',
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                    ),
+                  ..._latestTransactions
+                      .map((tx) => TransactionTile(transaction: tx)),
                 ],
               ),
             ),
-      bottomNavigationBar: Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).size.height * 0.03,
-        ),
-        child: BottomNavBarWidget(currentPage: Pages.home),
+      bottomNavigationBar: const BottomNavBarWidget(currentPage: Pages.home),
+    );
+  }
+
+  Widget _buildCards() {
+    return SizedBox(
+      height: 240,
+      child: PageView.builder(
+        controller: _pageController,
+        itemCount: _assets.length + 1,
+        itemBuilder: (context, index) {
+          final child = index == _assets.length
+              ? _AddCardPlaceholder(onTap: _addAsset)
+              : CreditCard(
+                  asset: _assets[index],
+                  onEdit: () => _editAsset(_assets[index]),
+                );
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+            child: child,
+          );
+        },
       ),
     );
   }
+}
 
-  Widget title() {
-    return Row(
-      children: [
-        Text(
-          ("Welcome, $userName $userSurname"),
-          style: TextStyle(
-            fontSize: 17,
-            fontWeight: FontWeight.bold,
-            color: Colors.black,
-          ),
-        ),
-      ],
-    );
-  }
+class _AddCardPlaceholder extends StatelessWidget {
+  const _AddCardPlaceholder({required this.onTap});
 
-  Widget latestTransactionsRow() {
-    return Column(
-      children: latestTransactions.map((tx) {
-        final date = DateTime.tryParse(tx["date"] ?? "");
-        final formattedDate =
-            date != null ? DateFormat('d MMM').format(date) : "Invalid";
+  final VoidCallback onTap;
 
-        final category = tx["category"] ?? "Unknown";
-        final icon = categoryIcons[category] ?? Icons.category;
-        final amount = tx["amount"]?.toString() ?? "0";
-
-        return Container(
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          decoration: BoxDecoration(
-            color: const Color(0xFFF7F8FA),
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Row(
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      child: DottedBorder(
+        borderType: BorderType.RRect,
+        radius: const Radius.circular(12),
+        padding: const EdgeInsets.all(6),
+        color: Colors.grey,
+        dashPattern: const [8, 4],
+        strokeWidth: 2,
+        child: const Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                ),
-                child: Center(
-                  child: FaIcon(icon, color: Colors.blue, size: 20),
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      category,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 16,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      formattedDate,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: Colors.grey,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Row(
-                children: [
-                  Text(
-                    amount,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  FaIcon(
-                    currencyIcons[globalCurrency] ??
-                        FontAwesomeIcons.moneyBillWave,
-                    size: 16,
-                    color: Colors.black87,
-                  ),
-                ],
+              Icon(Icons.add, size: 48, color: Colors.grey),
+              SizedBox(height: 10),
+              Text(
+                'Tap to add a new card',
+                style: TextStyle(fontSize: 18, color: Colors.grey),
               ),
             ],
           ),
-        );
-      }).toList(),
-    );
-  }
-
-  Widget cardRow() {
-    return Column(
-      children: [
-        SizedBox(
-          height: 240,
-          width: 800,
-          child: PageView.builder(
-            controller: _controller,
-            itemCount: cards.length + 1,
-            itemBuilder: (context, index) {
-              if (index == cards.length) {
-                return Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-                  child: InkWell(
-                    onTap: () async {
-                      final newCard = await showDialog<Map<String, String>>(
-                        context: context,
-                        builder: (context) => CardAdditionDialog(),
-                      );
-
-                      if (newCard != null) {
-                        final amountInt =
-                            int.tryParse(newCard['balance'] ?? '0') ?? 0;
-
-                        final createdAsset = await ApiService.addAsset(
-                          bankName: newCard['bankName']!,
-                          amount: amountInt,
-                          lastFourDigits: newCard['cardTail']!,
-                          brand: newCard['cardBrand']!,
-                          color: newCard['color']!,
-                        );
-                        if (!context.mounted) return;
-
-                        if (createdAsset != null) {
-                          await _fetchAssets();
-                          if (!context.mounted) return;
-
-                          AppDialogs.showCardActionSuccess(
-                            context,
-                            "Your card was successfully added.",
-                            onContinue: () {},
-                          );
-                        } else {
-                          AppDialogs.errorAlertAndNavigate(
-                            context,
-                            "Something went wrong while adding the card.",
-                            "Error",
-                          );
-                        }
-                      }
-                    },
-                    child: DottedBorder(
-                      borderType: BorderType.RRect,
-                      radius: Radius.circular(12),
-                      padding: EdgeInsets.all(6),
-                      color: Colors.grey,
-                      dashPattern: [8, 4],
-                      strokeWidth: 2,
-                      child: Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.add, size: 48, color: Colors.grey),
-                            SizedBox(height: 10),
-                            Text("Tap to add a new card",
-                                style:
-                                    TextStyle(fontSize: 18, color: Colors.grey))
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-              } else {
-                final card = cards[index];
-                return Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-                  child: CustomCreditCard(
-                      cardTail: card['lastFourDigits'] ?? '',
-                      bankName: card['bankName'] ?? '',
-                      balance: card['amount'].toString(),
-                      colorHex: card['color'] ?? '',
-                      cardBrand: card['brand'] ?? '',
-                      onEditPressed: () async {
-                        final result = await showDialog<Map<String, String>>(
-                          context: context,
-                          builder: (context) => CardAdditionDialog(
-                            initialData: {
-                              'bankName': card['bankName'] ?? '',
-                              'balance': card['amount'].toString(),
-                              'color': card['color'] ?? '',
-                              'cardTail': card['lastFourDigits'] ?? '',
-                              'cardBrand': card['brand'] ?? '',
-                              '_id': card['_id'] ?? '',
-                            },
-                          ),
-                        );
-
-                        if (result != null) {
-                          if (result['delete'] == 'true') {
-                            await ApiService.deleteAsset(card['_id']);
-                            await _fetchAssets();
-                            if (!context.mounted) return;
-
-                            AppDialogs.showCardActionSuccess(
-                              context,
-                              "Your card was successfully deleted.",
-                              onContinue: () {},
-                            );
-                            return;
-                          }
-
-                          if (result['updated'] == 'true') {
-                            await _fetchAssets();
-                            if (!context.mounted) return;
-                          }
-                        }
-                      }),
-                );
-              }
-            },
-          ),
         ),
-      ],
+      ),
     );
   }
 }
