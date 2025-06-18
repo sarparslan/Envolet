@@ -1,6 +1,23 @@
 # 📱 Envolet – Smart Personal Finance Tracker
 
-**Envolet** is a mobile application designed to help users manage their finances, track expenses, and make smarter spending decisions — all from a clean, modern interface.
+[![CI](https://github.com/sarparslan/Envolet/actions/workflows/ci.yml/badge.svg)](https://github.com/sarparslan/Envolet/actions/workflows/ci.yml)
+
+**Envolet** is a personal finance app that helps users track expenses, manage their bank cards and understand their spending habits, with AI-generated saving tips.
+
+The repository contains both parts of the project:
+
+| Folder | Description | Stack |
+| --- | --- | --- |
+| [`frontend/`](frontend) | Mobile client | Flutter, Provider, fl_chart |
+| [`backend/`](backend) | REST API | FastAPI, SQLAlchemy, JWT, OpenRouter |
+
+```
+Flutter app  ──HTTP/JSON──▶  FastAPI backend  ──▶  SQLite / any SQLAlchemy DB
+                                   │
+                                   └──▶  OpenRouter (AI suggestions)
+```
+
+The AI provider is only called from the backend, so no API keys ship inside the mobile app.
 
 ---
 
@@ -35,7 +52,7 @@
 - Visualize your financial activity with a line chart  
 - Compare monthly spending with overall average  
 - Filter results by date and category  
-- Get smart AI-based suggestions based on your habits  
+- Get AI-generated saving tips based on your spending (served by the backend)  
 
 <p float="left">
   <img src="https://github.com/user-attachments/assets/9c9a6058-568d-48d0-bb95-1bbaebde2e62" width="250"/>
@@ -71,56 +88,36 @@
 
 ---
 
-## 🛠 Tech Stack
+## 🚀 Quick Start
 
-- **Flutter / Dart** for the cross-platform mobile client
-- **REST API** backend with token-based authentication
-- **OpenRouter** (Gemini 2.0 Flash) for AI spending suggestions
-- **fl_chart** for line and pie charts
-- **shared_preferences** for session and user preferences
-
-## 📂 Project Structure
-
-```
-lib/
-├── auth/        # Login and registration screens
-├── models/      # API response models
-├── screens/     # Home, Tracker, Transactions, Settings
-├── services/    # ApiService – all backend and AI calls
-├── utils/       # Globals, dialogs, input formatters
-├── widgets/     # Reusable UI components (cards, nav bar, splash)
-└── main.dart
-test/            # Unit tests
-```
-
-## 🚀 Getting Started
-
-**Prerequisites:** Flutter SDK (3.x) and a running instance of the Envolet backend API.
+**1. Start the backend** (Python 3.11+, [uv](https://docs.astral.sh/uv/)):
 
 ```bash
-git clone https://github.com/sarparslan/Envolet.git
-cd Envolet
+cd backend
+cp .env.example .env
+uv sync
+uv run uvicorn app.main:app --reload --port 5001
+```
+
+API docs are then available at http://localhost:5001/docs.
+
+**2. Run the app** (Flutter 3.x):
+
+```bash
+cd frontend
 flutter pub get
+flutter run --dart-define=API_BASE_URL=http://localhost:5001
 ```
 
-## ⚙️ Configuration
+On an Android emulator use `http://10.0.2.2:5001` instead of `localhost`.
 
-The backend URL and the OpenRouter API key are provided at build time via `--dart-define`, so no secrets are stored in the source code:
+See [`backend/README.md`](backend/README.md) and [`frontend/README.md`](frontend/README.md) for configuration, project structure and tests.
 
-| Variable             | Description                        | Default                 |
-| -------------------- | ---------------------------------- | ----------------------- |
-| `API_BASE_URL`       | Base URL of the Envolet backend    | `http://localhost:5001` |
-| `OPENROUTER_API_KEY` | API key used for AI suggestions    | _(empty)_               |
+## 🧪 Tests
 
 ```bash
-flutter run \
-  --dart-define=API_BASE_URL=http://localhost:5001 \
-  --dart-define=OPENROUTER_API_KEY=your_openrouter_key
+cd backend && uv run pytest && uv run ruff check .
+cd frontend && flutter analyze && flutter test
 ```
 
-## 🧪 Running Tests
-
-```bash
-flutter analyze
-flutter test
-```
+Both suites run on every push via GitHub Actions.
